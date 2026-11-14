@@ -1,10 +1,188 @@
-/* Styles de base (provisoires) */
+/* Couleurs, typographie et mise en page générale. */
+
+:root {
+  --fond: #f4f4f3;
+  --surface: #ffffff;
+  --surface-2: #f8f8f7;
+  --survol: #ececea;
+  --bordure: #e2e2df;
+  --bordure-forte: #c9c9c5;
+  --texte: #1d1d1b;
+  --texte-2: #5d5d58;
+  --texte-3: #8a8a84;
+  --accent: #c2410c;
+  --accent-survol: #a8380a;
+  --accent-texte: #ffffff;
+  --accent-doux: #fdeee5;
+  --danger: #b42318;
+  --danger-doux: #fdecea;
+  --succes: #1f7a3d;
+  --attention: #a15c00;
+  --attention-doux: #fff4e0;
+  --zone-pages: #dcdcd8;
+  --ombre-page: 0 1px 3px rgb(0 0 0 / 0.18), 0 4px 14px rgb(0 0 0 / 0.08);
+  --ombre-flottante: 0 8px 30px rgb(0 0 0 / 0.18);
+  --rayon: 8px;
+  --hauteur-barre: 52px;
+  --largeur-panneau: 200px;
+  --largeur-panneau-droit: 300px;
+  color-scheme: light;
+}
+
+/* Thème sombre : choisi par l'utilisateur, ou réglage du système par défaut */
+:root[data-theme='sombre'] {
+  --fond: #1b1b1a;
+  --surface: #252524;
+  --surface-2: #2c2c2a;
+  --survol: #353533;
+  --bordure: #3a3a37;
+  --bordure-forte: #52524e;
+  --texte: #ececea;
+  --texte-2: #b4b4ae;
+  --texte-3: #85857f;
+  --accent: #f07a3e;
+  --accent-survol: #f58f5a;
+  --accent-texte: #1b1b1a;
+  --accent-doux: #3d2a1f;
+  --danger: #f2776b;
+  --danger-doux: #3d2321;
+  --succes: #6cc68a;
+  --attention: #f0b357;
+  --attention-doux: #3a2f1c;
+  --zone-pages: #121211;
+  --ombre-page: 0 1px 3px rgb(0 0 0 / 0.5), 0 4px 14px rgb(0 0 0 / 0.35);
+  --ombre-flottante: 0 8px 30px rgb(0 0 0 / 0.5);
+  color-scheme: dark;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='clair']) {
+    --fond: #1b1b1a;
+    --surface: #252524;
+    --surface-2: #2c2c2a;
+    --survol: #353533;
+    --bordure: #3a3a37;
+    --bordure-forte: #52524e;
+    --texte: #ececea;
+    --texte-2: #b4b4ae;
+    --texte-3: #85857f;
+    --accent: #f07a3e;
+    --accent-survol: #f58f5a;
+    --accent-texte: #1b1b1a;
+    --accent-doux: #3d2a1f;
+    --danger: #f2776b;
+    --danger-doux: #3d2321;
+    --succes: #6cc68a;
+    --attention: #f0b357;
+    --attention-doux: #3a2f1c;
+    --zone-pages: #121211;
+    --ombre-page: 0 1px 3px rgb(0 0 0 / 0.5), 0 4px 14px rgb(0 0 0 / 0.35);
+    --ombre-flottante: 0 8px 30px rgb(0 0 0 / 0.5);
+    color-scheme: dark;
+  }
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
-  font-family: system-ui, 'Segoe UI', sans-serif;
-  background: #f4f4f5;
-  color: #18181b;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--fond);
+  color: var(--texte);
+  font: 14px/1.45 'Segoe UI', system-ui, -apple-system, sans-serif;
 }
-#app {
-  padding: 2rem;
+
+body.chargement {
+  cursor: progress;
+}
+
+h1,
+h2,
+h3 {
+  line-height: 1.2;
+  margin: 0;
+}
+
+kbd {
+  display: inline-block;
+  padding: 1px 6px;
+  border: 1px solid var(--bordure-forte);
+  border-bottom-width: 2px;
+  border-radius: 4px;
+  font: 12px/1.4 inherit;
+  background: var(--surface-2);
+}
+
+/* Disposition principale : panneau gauche | visionneuse | panneau droit */
+.espace {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+  position: relative;
+}
+
+.panneau-gauche {
+  width: var(--largeur-panneau);
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--surface);
+  border-right: 1px solid var(--bordure);
+  min-height: 0;
+}
+
+body.sans-panneau .panneau-gauche {
+  display: none;
+}
+
+.panneau-droit {
+  width: var(--largeur-panneau-droit);
+  flex-shrink: 0;
+  background: var(--surface);
+  border-left: 1px solid var(--bordure);
+  overflow-y: auto;
+}
+
+.panneau-droit[hidden] {
+  display: none;
+}
+
+[hidden] {
+  display: none !important;
+}
+
+.discret {
+  color: var(--texte-3);
+  font-size: 13px;
+}
+
+@media (max-width: 1480px) {
+  .marque {
+    display: none;
+  }
+}
+
+@media (max-width: 1240px) {
+  .btn.outil span,
+  #btn-organiser span,
+  #btn-ouvrir span {
+    display: none;
+  }
+}
+
+@media (max-width: 800px) {
+  :root {
+    --largeur-panneau: 150px;
+  }
 }
