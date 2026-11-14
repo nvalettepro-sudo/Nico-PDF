@@ -1,0 +1,291 @@
+/* Zone centrale : pages, calque de texte, surlignage, outils. */
+
+.visionneuse {
+  flex: 1;
+  min-width: 0;
+  overflow: auto;
+  position: relative;
+  background: var(--zone-pages);
+  outline: none;
+  /* Réserve toujours la place de la barre de défilement : le zoom « largeur » reste stable */
+  scrollbar-gutter: stable;
+}
+
+.zone-pages {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  min-width: min-content;
+}
+
+.zone-pages.mode-double {
+  display: grid;
+  grid-template-columns: repeat(2, max-content);
+  justify-content: center;
+  align-items: start;
+}
+
+.page {
+  position: relative;
+  flex-shrink: 0;
+  background: #fff;
+  box-shadow: var(--ombre-page);
+  overflow: hidden;
+  --user-unit: 1;
+  --scale-round-x: 1px;
+  --scale-round-y: 1px;
+}
+
+.page.masquee {
+  display: none;
+}
+
+.canvas-page {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+/* Lecture de nuit : couleurs des pages inversées (le fichier n'est pas modifié) */
+.pages-inversees .page,
+.pages-inversees .miniature .cadre canvas,
+.pages-inversees .carte-page .cadre canvas {
+  filter: invert(1) hue-rotate(180deg);
+}
+
+.pages-inversees .page {
+  background: #000;
+}
+
+/* ---------- Calque de texte de PDF.js (texte invisible sélectionnable) ---------- */
+/* Repris de pdf_viewer.css (PDF.js, licence Apache 2.0), limité au nécessaire. */
+.textLayer {
+  color-scheme: only light;
+  position: absolute;
+  text-align: initial;
+  inset: 0;
+  overflow: clip;
+  opacity: 1;
+  line-height: 1;
+  letter-spacing: normal;
+  word-spacing: normal;
+  text-size-adjust: none;
+  forced-color-adjust: none;
+  transform-origin: 0 0;
+  caret-color: CanvasText;
+  z-index: 0;
+  --min-font-size: 1;
+  --text-scale-factor: calc(var(--total-scale-factor) * var(--min-font-size));
+  --min-font-size-inv: calc(1 / var(--min-font-size));
+}
+
+.textLayer :is(span, br) {
+  color: transparent;
+  position: absolute;
+  white-space: pre;
+  cursor: text;
+  transform-origin: 0% 0%;
+  user-select: text;
+}
+
+.textLayer > :not(.markedContent),
+.textLayer .markedContent span:not(.markedContent) {
+  z-index: 1;
+  --font-height: 0;
+  font-size: calc(var(--text-scale-factor) * var(--font-height));
+  --scale-x: 1;
+  --rotate: 0deg;
+  transform: rotate(var(--rotate)) scaleX(var(--scale-x)) scale(var(--min-font-size-inv));
+}
+
+.textLayer .markedContent {
+  display: contents;
+}
+
+.textLayer span[role='img'] {
+  user-select: none;
+  cursor: default;
+}
+
+.textLayer ::selection {
+  background: rgb(0 90 255 / 0.28);
+  color: transparent;
+}
+
+.textLayer br::selection {
+  background: transparent;
+}
+
+.textLayer .endOfContent {
+  display: block;
+  position: absolute;
+  inset: 100% 0 0;
+  z-index: 0;
+  cursor: default;
+  user-select: none;
+}
+
+.textLayer.selecting .endOfContent {
+  top: 0;
+}
+
+/* Rotation des calques (même logique que PDF.js) */
+[data-main-rotation='90'] {
+  transform: rotate(90deg) translateY(-100%);
+}
+
+[data-main-rotation='180'] {
+  transform: rotate(180deg) translate(-100%, -100%);
+}
+
+[data-main-rotation='270'] {
+  transform: rotate(270deg) translateX(-100%);
+}
+
+/* ---------- Surlignage de la recherche ---------- */
+.calque-surlignage {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.surlignage {
+  position: absolute;
+  background: rgb(255 200 0 / 0.42);
+  mix-blend-mode: multiply;
+  border-radius: 2px;
+}
+
+.surlignage.actuel {
+  background: rgb(255 120 0 / 0.55);
+  outline: 2px solid rgb(230 90 0);
+  outline-offset: 1px;
+}
+
+/* ---------- Calque d'outil (capture, retouche) ---------- */
+.calque-outil {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+
+.outil-capture .calque-outil,
+.outil-retouche .calque-outil {
+  pointer-events: auto;
+}
+
+.outil-capture .calque-outil {
+  cursor: crosshair;
+}
+
+.outil-retouche .calque-outil {
+  cursor: text;
+}
+
+.outil-retouche.placer-texte .calque-outil {
+  cursor: copy;
+}
+
+.cadre-capture {
+  position: absolute;
+  border: 1.5px dashed var(--accent);
+  background: rgb(194 65 12 / 0.1);
+}
+
+/* ---------- Accueil et dépôt de fichier ---------- */
+.accueil {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.accueil-carte {
+  text-align: center;
+  max-width: 420px;
+  padding: 40px 36px;
+  background: var(--surface);
+  border: 1.5px dashed var(--bordure-forte);
+  border-radius: 14px;
+}
+
+.accueil-carte h1 {
+  font-size: 22px;
+  margin: 12px 0 6px;
+}
+
+.accueil-carte p {
+  margin: 6px 0 16px;
+  color: var(--texte-2);
+}
+
+.accueil-carte .discret {
+  margin: 20px 0 0;
+}
+
+.accueil-icone {
+  color: var(--accent);
+}
+
+.accueil-icone svg {
+  width: 48px;
+  height: 48px;
+  stroke-width: 1.4;
+}
+
+.depot {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: grid;
+  place-items: center;
+  background: rgb(194 65 12 / 0.12);
+  border: 3px dashed var(--accent);
+  pointer-events: none;
+}
+
+.depot div {
+  padding: 16px 28px;
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--ombre-flottante);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+/* ---------- Retouche du texte (prévisualisation sur la page) ---------- */
+.segment-survol {
+  position: absolute;
+  outline: 1px dashed var(--accent);
+  background: rgb(194 65 12 / 0.06);
+  pointer-events: none;
+}
+
+.apercu-retouche {
+  position: absolute;
+  outline: 1.5px solid var(--accent);
+  outline-offset: 1px;
+  pointer-events: none;
+  white-space: pre;
+  line-height: 1.2;
+  transform-origin: 0 0;
+}
+
+.apercu-retouche .fond {
+  position: absolute;
+}
+
+.apercu-retouche .texte {
+  position: absolute;
+  left: 0;
+  white-space: pre;
+  line-height: 1.2;
+}

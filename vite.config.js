@@ -7,5 +7,7 @@ export default defineConfig({
   build: {
     target: 'es2022',
     sourcemap: false,
+    // PDF.js et pdf-lib sont volumineux : c'est normal, on relève le seuil d'alerte.
+    chunkSizeWarningLimit: 2000,
   },
 });
