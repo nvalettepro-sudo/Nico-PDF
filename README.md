@@ -1,9 +1,12 @@
 # Nico PDF
 
+**Le site est ici : <https://nvalettepro-sudo.github.io/Nico-PDF/>**
+
 Lecteur et retoucheur de PDF qui s'ouvre dans le navigateur (Chrome ou Edge).
 Usage personnel. **Les PDF ne quittent jamais l'ordinateur** : aucun serveur, aucun suivi.
 
-**Version actuelle : 1** — lecteur complet, organisation des pages, retouche du texte.
+**Version actuelle : voir la fenêtre ⓘ À propos** (numéro de version, liste des fonctions, historique des 4 dernières versions).
+Ces informations sont tenues à jour dans `src/version.js` (règles dans `CLAUDE.md`).
 
 ## Fonctions de la version 1
 

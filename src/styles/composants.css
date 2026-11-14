@@ -820,3 +820,64 @@ input.petit {
 body.lecture-seule [data-modif] {
   opacity: 0.38;
 }
+
+/* ---------- À propos : version, fonctions, historique ---------- */
+.version-actuelle {
+  display: inline-block;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--accent-doux);
+  color: var(--accent);
+  font-size: 13px;
+}
+
+.dialogue h4 {
+  margin: 10px 0 4px;
+  font-size: 13px;
+  color: var(--texte-2);
+}
+
+.fonctions {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 0 20px;
+}
+
+.fonctions ul,
+.historique ul {
+  margin: 0;
+  padding-left: 18px;
+}
+
+.fonctions li,
+.historique li li {
+  margin-bottom: 3px;
+  font-size: 13px;
+}
+
+.historique {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.historique > li {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--bordure);
+}
+
+.historique > li:last-child {
+  border-bottom: none;
+}
+
+.entete-version {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 4px;
+}
+
+.entete-version span {
+  color: var(--texte-3);
+  font-size: 12px;
+}
