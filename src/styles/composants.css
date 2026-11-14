@@ -529,8 +529,16 @@ input.petit {
   transition: opacity 0.3s, transform 0.3s;
 }
 
-.notification.succes {
-  border-left: 4px solid var(--succes);
+.notification.succes::before,
+.notification.attention::before {
+  content: '';
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: 10px;
+  border-radius: 50%;
+  vertical-align: 1px;
+  background: var(--succes);
 }
 
 .notification.erreur {
@@ -538,8 +546,8 @@ input.petit {
   color: #fff;
 }
 
-.notification.attention {
-  border-left: 4px solid var(--attention);
+.notification.attention::before {
+  background: var(--attention);
 }
 
 .notification.sortie {
