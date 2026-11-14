@@ -1,14 +1,30 @@
 // Page « À propos » : ce que fait l'application et ses limites, dites franchement.
 import { ouvrirDialogue } from './dialogues.js';
 import { accesFichiersDisponible } from '../pdf/save.js';
+import { VERSION, FONCTIONS, HISTORIQUE } from '../version.js';
+
+/** Date au format français : « 14 novembre 2026 ». */
+function dateFr(iso) {
+  return new Date(`${iso}T12:00:00`).toLocaleDateString('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
+}
 
 export function afficherAPropos() {
   return ouvrirDialogue({
-    titre: 'À propos de Nico PDF',
+    titre: `À propos de Nico PDF — v${VERSION}`,
     classe: 'large',
     contenu: `
       <p><strong>Nico PDF</strong> lit et retouche vos PDF directement dans le navigateur.
       <strong>Vos fichiers ne quittent jamais votre ordinateur</strong> : aucun envoi vers un serveur, aucun outil de suivi.</p>
+      <p class="version-actuelle">Version <strong>${VERSION}</strong></p>
+
+      <h3>Fonctions</h3>
+      <div class="fonctions">
+        ${FONCTIONS.map((g) => `
+          <div>
+            <h4>${g.theme}</h4>
+            <ul>${g.elements.map((e) => `<li>${e}</li>`).join('')}</ul>
+          </div>`).join('')}
+      </div>
 
       <h3>Raccourcis clavier</h3>
       <table class="raccourcis">
@@ -33,6 +49,15 @@ export function afficherAPropos() {
           ${accesFichiersDisponible ? '<em>(disponible dans ce navigateur)</em>' : '<em>(non disponible dans ce navigateur)</em>'}</li>
         <li><strong>Hors périmètre</strong> : annotations, formulaires, caviardage, comparaison de versions.</li>
       </ul>
-      <p class="discret">Version 1 — affichage par PDF.js (Mozilla), modifications par pdf-lib.</p>`,
+
+      <h3>Historique des versions</h3>
+      <ol class="historique">
+        ${HISTORIQUE.map((v) => `
+          <li>
+            <div class="entete-version"><strong>${v.version}</strong><span>${dateFr(v.date)}</span></div>
+            <ul>${v.modifications.map((m) => `<li>${m}</li>`).join('')}</ul>
+          </li>`).join('')}
+      </ol>
+      <p class="discret">Affichage par PDF.js (Mozilla), modifications par pdf-lib.</p>`,
   });
 }
