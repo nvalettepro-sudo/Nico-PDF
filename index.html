@@ -3,13 +3,119 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light dark" />
     <title>Nico PDF</title>
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%23c2410c'/%3E%3Ctext x='16' y='22' font-family='Arial' font-weight='bold' font-size='14' fill='white' text-anchor='middle'%3EPDF%3C/text%3E%3C/svg%3E" />
+    <script>
+      // Applique le thème mémorisé avant l'affichage, pour éviter un flash blanc.
+      try {
+        const t = localStorage.getItem('nicopdf.theme');
+        if (t) document.documentElement.dataset.theme = t;
+      } catch {}
+    </script>
   </head>
   <body>
-    <div id="app">
-      <h1>Nico PDF</h1>
-      <p id="statut">Chargement…</p>
+    <header class="barre-outils" id="barre-outils">
+      <div class="groupe">
+        <button class="btn-icone" id="btn-panneau" data-icone="panneau" title="Afficher / masquer le panneau des pages"></button>
+        <span class="marque">Nico&nbsp;PDF</span>
+      </div>
+
+      <div class="groupe">
+        <button class="btn" id="btn-ouvrir" data-icone="ouvrir" title="Ouvrir un PDF (Ctrl+O)"><span>Ouvrir</span></button>
+        <button class="btn-icone" id="btn-enregistrer" data-icone="enregistrer" title="Enregistrer (Ctrl+S)" data-doc data-modif></button>
+        <button class="btn-icone" id="btn-enregistrer-sous" data-icone="enregistrer-sous" title="Enregistrer sous… (Ctrl+Maj+S)" data-doc></button>
+      </div>
+
+      <div class="groupe">
+        <button class="btn-icone" id="btn-annuler" data-icone="annuler" title="Annuler (Ctrl+Z)" disabled></button>
+        <button class="btn-icone" id="btn-retablir" data-icone="retablir" title="Rétablir (Ctrl+Y)" disabled></button>
+      </div>
+
+      <div class="groupe navigation">
+        <button class="btn-icone" id="btn-page-prec" data-icone="haut" title="Page précédente" data-doc></button>
+        <input id="champ-page" class="champ-page" type="text" inputmode="numeric" value="–" aria-label="Numéro de page" data-doc />
+        <span id="total-pages" class="total-pages">/ –</span>
+        <button class="btn-icone" id="btn-page-suiv" data-icone="bas" title="Page suivante" data-doc></button>
+      </div>
+
+      <div class="groupe">
+        <button class="btn-icone" id="btn-zoom-moins" data-icone="moins" title="Zoom arrière (−)" data-doc></button>
+        <select id="choix-zoom" class="choix" title="Zoom" data-doc>
+          <option value="largeur">Largeur</option>
+          <option value="page">Page entière</option>
+          <option value="0.5">50 %</option>
+          <option value="0.75">75 %</option>
+          <option value="1">100 %</option>
+          <option value="1.25">125 %</option>
+          <option value="1.5">150 %</option>
+          <option value="2">200 %</option>
+          <option value="3">300 %</option>
+          <option value="4">400 %</option>
+          <option value="libre" hidden>–</option>
+        </select>
+        <button class="btn-icone" id="btn-zoom-plus" data-icone="plus" title="Zoom avant (+)" data-doc></button>
+        <button class="btn-icone" id="btn-rotation-vue" data-icone="rotation" title="Tourner l'affichage (le fichier n'est pas modifié)" data-doc></button>
+        <select id="choix-mode" class="choix" title="Mode d'affichage" data-doc>
+          <option value="continu">Continu</option>
+          <option value="simple">Page simple</option>
+          <option value="double">Double page</option>
+        </select>
+      </div>
+
+      <div class="groupe outils" role="group" aria-label="Outils">
+        <button class="btn outil actif" id="outil-selection" data-outil="selection" data-icone="curseur" title="Sélectionner et copier du texte" data-doc><span>Texte</span></button>
+        <button class="btn outil" id="outil-capture" data-outil="capture" data-icone="capture" title="Capture de zone : copie une zone en image" data-doc><span>Capture</span></button>
+        <button class="btn outil" id="outil-retouche" data-outil="retouche" data-icone="retouche" title="Retouche du texte" data-doc data-modif><span>Retouche</span></button>
+        <button class="btn" id="btn-organiser" data-icone="grille" title="Organiser les pages" data-doc data-modif><span>Pages</span></button>
+      </div>
+
+      <div class="groupe fin">
+        <button class="btn-icone" id="btn-rechercher" data-icone="loupe" title="Rechercher (Ctrl+F)" data-doc></button>
+        <button class="btn-icone" id="btn-theme" data-icone="lune" title="Thème clair / sombre"></button>
+        <button class="btn-icone" id="btn-inverser" data-icone="inverser" title="Inverser les couleurs des pages (lecture de nuit)"></button>
+        <button class="btn-icone" id="btn-a-propos" data-icone="info" title="À propos et limites"></button>
+      </div>
+    </header>
+
+    <div class="barre-recherche" id="barre-recherche" hidden>
+      <span data-icone="loupe" class="icone-seule"></span>
+      <input id="champ-recherche" type="search" placeholder="Rechercher dans le document…" autocomplete="off" />
+      <span id="compte-recherche" class="compte"></span>
+      <button class="btn-icone" id="btn-resultat-prec" data-icone="haut" title="Résultat précédent (Maj+Entrée)"></button>
+      <button class="btn-icone" id="btn-resultat-suiv" data-icone="bas" title="Résultat suivant (Entrée)"></button>
+      <button class="btn-icone" id="btn-fermer-recherche" data-icone="fermer" title="Fermer (Échap)"></button>
     </div>
+
+    <main class="espace">
+      <aside class="panneau-gauche" id="panneau-gauche">
+        <div class="onglets" role="tablist">
+          <button role="tab" class="onglet actif" data-onglet="miniatures">Miniatures</button>
+          <button role="tab" class="onglet" data-onglet="signets">Signets</button>
+        </div>
+        <div class="contenu-onglet" id="liste-miniatures" data-contenu="miniatures"></div>
+        <div class="contenu-onglet" id="liste-signets" data-contenu="signets" hidden></div>
+      </aside>
+
+      <section class="visionneuse" id="visionneuse" tabindex="-1">
+        <div class="accueil" id="accueil">
+          <div class="accueil-carte">
+            <div class="accueil-icone" data-icone="document"></div>
+            <h1>Ouvrez un PDF</h1>
+            <p>Glissez-déposez un fichier ici, ou</p>
+            <button class="btn principal" id="btn-ouvrir-accueil">Choisir un PDF…</button>
+            <p class="discret">Vos fichiers restent sur votre ordinateur : rien n'est envoyé en ligne.</p>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panneau-droit" id="panneau-droit" hidden></aside>
+    </main>
+
+    <div class="organiseur" id="organiseur" hidden></div>
+    <div class="depot" id="depot" hidden><div>Déposez le PDF pour l'ouvrir</div></div>
+    <div class="notifications" id="notifications" aria-live="polite"></div>
+
     <script type="module" src="/src/main.js"></script>
   </body>
 </html>
