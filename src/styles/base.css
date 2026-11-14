@@ -1,0 +1,10 @@
+/* Styles de base (provisoires) */
+body {
+  margin: 0;
+  font-family: system-ui, 'Segoe UI', sans-serif;
+  background: #f4f4f5;
+  color: #18181b;
+}
+#app {
+  padding: 2rem;
+}

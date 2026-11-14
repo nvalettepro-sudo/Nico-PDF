@@ -1,0 +1,32 @@
+{
+  "name": "nico-pdf",
+  "version": "1.0.0",
+  "description": "Nico PDF — lecteur et retoucheur de PDF dans le navigateur, 100 % local",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nvalettepro-sudo/Nico-PDF.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "UNLICENSED",
+  "bugs": {
+    "url": "https://github.com/nvalettepro-sudo/Nico-PDF/issues"
+  },
+  "homepage": "https://github.com/nvalettepro-sudo/Nico-PDF#readme",
+  "dependencies": {
+    "fflate": "^0.8.3",
+    "pdf-lib": "^1.17.1",
+    "pdfjs-dist": "^6.5.438",
+    "tesseract.js": "^7.0.0"
+  },
+  "devDependencies": {
+    "vite": "^8.3.8"
+  },
+  "private": true,
+  "type": "module"
+}
