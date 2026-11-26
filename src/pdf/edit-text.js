@@ -3,6 +3,7 @@
 // 2. le nouveau texte est dessiné par-dessus avec la police standard la plus proche.
 // LIMITE : l'ancien texte reste dans le fichier, sous le rectangle (il reste copiable et cherchable).
 import { StandardFonts, rgb, degrees } from 'pdf-lib';
+import { ecrireAvecPoliceOrigine } from './police-origine.js';
 
 // ---------- Analyse du texte de la page ----------
 
@@ -126,7 +127,7 @@ export function coinsZone({ x, y, largeur, hauteur, angle }) {
  * Devine la police standard la plus proche de la police d'origine.
  * @returns {{ famille: 'Helvetica'|'Times'|'Courier', gras: boolean, italique: boolean, nomOrigine: string }}
  */
-export function devinerPolice(pagePdfjs, segment) {
+export function devinerPolice(pagePdfjs, segment, nomReel = '') {
   let objet = null;
   try {
     if (pagePdfjs.commonObjs.has(segment.fontName)) objet = pagePdfjs.commonObjs.get(segment.fontName);
@@ -137,13 +138,17 @@ export function devinerPolice(pagePdfjs, segment) {
   const nomOrigine = String(
     objet?.cssFontInfo?.fontFamily || objet?.systemFontInfo?.css || objet?.fallbackName || '',
   ).split(',')[0].replace(/["']/g, '').replace(/^[A-Z]{6}\+/, '').trim(); // ex. « ABCDEF+Calibri » -> « Calibri »
-  const indice = `${nomOrigine} ${segment.style.fontFamily ?? ''}`.toLowerCase();
+  // Le vrai nom lu dans le fichier (ex. « Calibri-Bold ») est le meilleur indice ;
+  // la famille générique de PDF.js (« serif »…) n'est utilisée qu'en dernier recours.
+  const indice = (nomReel || nomOrigine || segment.style.fontFamily || '').toLowerCase();
   let famille = 'Helvetica';
+  const sansSerif = /arial|helvetica|calibri|carlito|segoe|verdana|tahoma|liberation ?sans|dejavu ?sans|open ?sans|roboto|frutiger|univers|futura|gill|franklin|myriad|century gothic|aptos|sans/;
   if (/courier|mono|consol|typewriter/.test(indice)) famille = 'Courier';
+  else if (sansSerif.test(indice)) famille = 'Helvetica';
   else if (/times|georgia|garamond|cambria|palatino|minion|book|roman|serif/.test(indice) && !/sans/.test(indice)) famille = 'Times';
   const gras = /bold|black|heavy|semibold|demi|gras/.test(indice) || Boolean(objet?.bold || objet?.black);
   const italique = /italic|oblique|kursiv/.test(indice) || Boolean(objet?.italic);
-  return { famille, gras, italique, nomOrigine: nomOrigine || segment.style.fontFamily || 'inconnue' };
+  return { famille, gras, italique, nomOrigine: nomReel || nomOrigine || segment.style.fontFamily || 'inconnue' };
 }
 
 /**
@@ -300,13 +305,22 @@ export async function appliquerRetouche(doc, r) {
     });
   }
 
-  const police = await doc.embedFont(policeStandard(r.famille, r.gras, r.italique));
-  const { texte, remplaces } = adapterTexte(r.texte, police);
   const interligne = r.taille * 1.2;
   const cos = Math.cos(r.angle);
   const sin = Math.sin(r.angle);
-  const lignes = texte.split('\n');
+  let remplaces = [];
   let largeurMax = 0;
+  let lignes = r.texte.split('\n');
+  if (r.famille === 'Origine' && r.policeOrigine) {
+    // Police d'origine du PDF : écriture à l'identique (si toutes les lettres existent)
+    ({ largeurMax } = ecrireAvecPoliceOrigine(doc, page, r.policeOrigine, {
+      texte: r.texte, origine: r.origine, angle: r.angle, taille: r.taille, couleur: r.couleur, interligne,
+    }));
+  } else {
+  const police = await doc.embedFont(policeStandard(r.famille, r.gras, r.italique));
+  const adapte = adapterTexte(r.texte, police);
+  remplaces = adapte.remplaces;
+  lignes = adapte.texte.split('\n');
   lignes.forEach((ligne, i) => {
     if (!ligne) return;
     largeurMax = Math.max(largeurMax, police.widthOfTextAtSize(ligne, r.taille));
@@ -319,6 +333,7 @@ export async function appliquerRetouche(doc, r) {
       rotate: degrees(angleDeg),
     });
   });
+  }
 
   // Zone occupée par le nouveau texte (repère de la ligne), pour pouvoir le retrouver au clic
   let zoneTexte = null;

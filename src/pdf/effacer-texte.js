@@ -22,7 +22,7 @@ export function decoderFlux(flux) {
   return flux.getContents();
 }
 
-const versLatin1 = (octets) => {
+export const versLatin1 = (octets) => {
   let s = '';
   for (let i = 0; i < octets.length; i += 0x8000) s += String.fromCharCode(...octets.subarray(i, i + 0x8000));
   return s;
@@ -207,7 +207,7 @@ function codesWinAnsi() {
  * Informations sur une police de la page.
  * @returns {{ gere: boolean, raison?: string, octets: 1|2, largeur: (code: number) => number, espaceMot: boolean }}
  */
-function lirePolice(contexte, dictPolice, nomRessource) {
+export function lirePolice(contexte, dictPolice, nomRessource) {
   if (!(dictPolice instanceof PDFDict)) return { gere: false, raison: `police ${nomRessource} introuvable` };
   const type = nomPdf(dictPolice.lookup(PDFName.of('Subtype')));
 
@@ -236,7 +236,9 @@ function lirePolice(contexte, dictPolice, nomRessource) {
         }
       }
     }
-    return { gere: true, octets: 2, largeur: (code) => (largeurs.get(code) ?? defaut) / 1000, espaceMot: false };
+    return {
+      gere: true, octets: 2, largeur: (code) => (largeurs.get(code) ?? defaut) / 1000, espaceMot: false, existe: (code) => largeurs.has(code),
+    };
   }
 
   // Polices simples (1 octet par caractère)
@@ -252,7 +254,13 @@ function lirePolice(contexte, dictPolice, nomRessource) {
 
   if (tableau instanceof PDFArray) {
     const valeurs = tableau.asArray().map((v) => nombre(contexte, v) ?? manquante);
-    return { gere: true, octets: 1, largeur: (code) => (valeurs[code - premier] ?? manquante) * echelle, espaceMot: true };
+    return {
+      gere: true,
+      octets: 1,
+      largeur: (code) => (valeurs[code - premier] ?? manquante) * echelle,
+      espaceMot: true,
+      existe: (code) => (valeurs[code - premier] ?? 0) > 0,
+    };
   }
 
   // Pas de tableau de largeurs : police standard (Helvetica, Times…), largeurs connues
@@ -281,6 +289,7 @@ function lirePolice(contexte, dictPolice, nomRessource) {
     octets: 1,
     largeur: (code) => (metriques.getWidthOfGlyph(noms[code] ?? '') ?? 500) / 1000,
     espaceMot: true,
+    existe: (code) => Boolean(noms[code]) && metriques.getWidthOfGlyph(noms[code]) !== undefined,
   };
 }
 
@@ -307,7 +316,7 @@ export function dansZone(zone, px, py) {
 const ecrireNombre = (v) => String(Math.round(v * 1000) / 1000);
 const versHexa = (codes, octets) => `<${codes.map((c) => c.toString(16).padStart(octets * 2, '0')).join('')}>`;
 
-// ---------- Effacement ----------
+// ---------- Parcours des lettres de la page ----------
 
 /**
  * Retire de la page les lettres dont le centre est dans l'une des zones.
@@ -318,19 +327,57 @@ const versHexa = (codes, octets) => `<${codes.map((c) => c.toString(16).padStart
  * @returns {{ lettres: number, policesNonGerees: string[], blocsIgnores: number }}
  */
 export function effacerTexteSousZones(doc, page, zones, fluxProteges) {
+  if (!zones.length) return { lettres: 0, policesNonGerees: [], blocsIgnores: 0 };
+  return parcourirTexte(doc, page, {
+    fluxProteges,
+    decider: (lettre) => zones.some((z) => dansZone(z, lettre.cx, lettre.cy)),
+  });
+}
+
+/**
+ * Polices utilisées par les lettres d'une zone, de la plus fréquente à la moins fréquente.
+ * @returns {Array<{ nomRessource: string, ref: number[]|null, nomBase: string, taille: number, th: number, lettres: number }>}
+ */
+export function policesSousZone(doc, page, zone, fluxProteges = new Set()) {
+  const comptes = new Map();
+  parcourirTexte(doc, page, {
+    fluxProteges,
+    decider: (lettre) => {
+      if (dansZone(zone, lettre.cx, lettre.cy)) {
+        const c = comptes.get(lettre.police) ?? { ...lettre.infosPolice, nomRessource: lettre.police, taille: lettre.taille, th: lettre.th, lettres: 0 };
+        c.lettres++;
+        comptes.set(lettre.police, c);
+      }
+      return false; // on ne modifie rien
+    },
+  });
+  return [...comptes.values()].sort((a, b) => b.lettres - a.lettres);
+}
+
+/**
+ * Parcourt toutes les lettres de la page en suivant leur position.
+ * `decider(lettre)` renvoie true pour retirer la lettre (elle est remplacée par un décalage).
+ */
+function parcourirTexte(doc, page, { fluxProteges = new Set(), decider }) {
   const contexte = doc.context;
   const rapport = { lettres: 0, policesNonGerees: new Set(), blocsIgnores: 0 };
   page.node.normalize();
   const contenus = page.node.Contents();
-  if (!(contenus instanceof PDFArray) || !zones.length) return { ...rapport, policesNonGerees: [] };
+  if (!(contenus instanceof PDFArray)) return { ...rapport, policesNonGerees: [] };
   const ressources = page.node.Resources();
   const dictPolices = ressources?.lookup(PDFName.of('Font'));
   const dictXObjets = ressources?.lookup(PDFName.of('XObject'));
   const polices = new Map();
   const police = (nom) => {
     if (!polices.has(nom)) {
-      const dict = dictPolices instanceof PDFDict ? dictPolices.lookup(PDFName.of(nom)) : undefined;
-      polices.set(nom, lirePolice(contexte, dict, nom));
+      const brut = dictPolices instanceof PDFDict ? dictPolices.get(PDFName.of(nom)) : undefined;
+      const dict = brut ? contexte.lookup(brut) : undefined;
+      const infos = lirePolice(contexte, dict, nom);
+      infos.infosPolice = {
+        ref: brut && typeof brut.objectNumber === 'number' ? [brut.objectNumber, brut.generationNumber] : null,
+        nomBase: dict instanceof PDFDict ? (nomPdf(dict.lookup(PDFName.of('BaseFont'))) ?? '').replace(/^[A-Z]{6}\+/, '') : '',
+      };
+      polices.set(nom, infos);
     }
     return polices.get(nom);
   };
@@ -376,7 +423,11 @@ export function effacerTexteSousZones(doc, page, zones, fluxProteges) {
         const trm = multiplier([etatG.tfs * etatG.th, 0, 0, etatG.tfs, 0, etatG.ts], multiplier(tm, etatG.ctm));
         const [cx, cy] = appliquer(trm, w0 / 2, 0.3);
         const avance = (w0 * etatG.tfs + etatG.tc + espace) * etatG.th;
-        if (effacer && etatG.tfs && zones.some((z) => dansZone(z, cx, cy))) {
+        const taille = Math.hypot(trm[2], trm[3]);
+        const lettre = {
+          cx, cy, code, police: etatG.police, infosPolice: p.infosPolice, taille, th: taille ? Math.hypot(trm[0], trm[1]) / taille : 1,
+        };
+        if (effacer && etatG.tfs && decider(lettre)) {
           retire = true;
           rapport.lettres++;
           // La lettre est remplacée par un décalage de même largeur
