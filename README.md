@@ -19,6 +19,8 @@ Ces informations sont tenues à jour dans `src/version.js` (règles dans `CLAUDE
 | Thème sombre, inversion des couleurs des pages | Boutons lune et cercle |
 | Sélection et copie du texte, capture de zone en image | Outils **Texte** et **Capture** |
 | Réordonner, supprimer, pivoter, insérer, extraire, remplacer des pages | Bouton **Pages** |
+| Surligner, souligner, barrer, surligner une zone, commenter | Outil **Surligner** |
+| Liste des surlignages et commentaires, accès direct, poubelle, corbeille | Panneau gauche, onglet **Modifs** |
 | Modifier un texte existant, ajouter une zone de texte | Outil **Retouche** |
 | Annuler / rétablir (10 étapes) | Ctrl+Z / Ctrl+Y |
 | Enregistrer / Enregistrer sous | Ctrl+S / Ctrl+Maj+S |
@@ -69,7 +71,8 @@ Une fois la page chargée, l'application fonctionne sans Internet tant que l'ong
 ## Tester
 
 - Fichiers de test : `tests/fixtures/` (texte simple, document avec signets, scan).
-- Checklist de tests manuels : [`tests/checklist-v1.md`](tests/checklist-v1.md).
+- Checklist de tests manuels : [`tests/checklist-v1.md`](tests/checklist-v1.md),
+  surlignage et palette « Modifs » : [`tests/checklist-surlignage.md`](tests/checklist-surlignage.md).
 - Pour recréer les fichiers de test : `npm run creer-fixtures` (nécessite Playwright pour le scan).
 
 ## Organisation du code
@@ -84,6 +87,8 @@ src/pdf/render.js        affichage des pages visibles + calque de texte
 src/pdf/search.js        recherche
 src/pdf/pages.js         organisation des pages (pdf-lib)
 src/pdf/edit-text.js     retouche du texte (pdf-lib)
+src/pdf/annotations.js   surlignages et commentaires : écriture (pdf-lib) et lecture (PDF.js)
+src/modifications.js     inventaire des modifications du document + corbeille
 src/pdf/save.js          fichiers : ouvrir, enregistrer, télécharger
 src/ui/                  barre d'outils, panneaux, boîtes de dialogue, thème…
 src/styles/              apparence

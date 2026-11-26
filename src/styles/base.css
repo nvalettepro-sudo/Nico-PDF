@@ -186,3 +186,8 @@ body.sans-panneau .panneau-gauche {
     --largeur-panneau: 150px;
   }
 }
+
+/* La palette « Modifications » élargit le panneau gauche */
+body.panneau-large {
+  --largeur-panneau: 300px;
+}

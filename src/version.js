@@ -3,8 +3,8 @@
 //
 // RÈGLES DE MISE À JOUR (à appliquer à chaque modification) :
 // 1. Augmenter le numéro dans package.json (« version ») :
-//    - correctif ou retouche d'apparence      : 1.1.0 -> 1.1.1
-//    - fonction ajoutée, modifiée ou retirée  : 1.1.0 -> 1.2.0
+//    - correctif ou retouche d'apparence      : 1.2.0 -> 1.2.1
+//    - fonction ajoutée, modifiée ou retirée  : 1.2.0 -> 1.3.0
 //    - nouvelle version du cahier des charges : 1.x  -> 2.0.0
 // 2. Ajouter en tête de HISTORIQUE la nouvelle version et ses modifications majeures.
 //    Garder seulement les 4 dernières versions.
@@ -44,6 +44,25 @@ export const FONCTIONS = [
     ],
   },
   {
+    theme: 'Surlignage et commentaires',
+    elements: [
+      'Surligner, souligner ou barrer du texte sélectionné (6 couleurs)',
+      'Surligner une zone rectangulaire (plans, scans sans texte)',
+      'Commenter un surlignage ; bulle du commentaire au survol',
+      'Changer la couleur ou supprimer un élément',
+      'Annotations PDF standard, visibles dans Acrobat, Edge, Chrome…',
+    ],
+  },
+  {
+    theme: 'Palette « Modifications »',
+    elements: [
+      'Onglet « Modifs » du panneau gauche : surlignages, surlignages commentés, corbeille',
+      'Clic sur un élément : la vue s\'y place et il clignote',
+      'Poubelle sur chaque élément ; corbeille pour restaurer (jusqu\'à la fermeture du document)',
+      'Annotations faites dans d\'autres logiciels listées et supprimables aussi',
+    ],
+  },
+  {
     theme: 'Retouche',
     elements: [
       'Modifier un texte existant (par recouvrement)',
@@ -63,6 +82,15 @@ export const FONCTIONS = [
 
 /** Les 4 dernières versions, de la plus récente à la plus ancienne. */
 export const HISTORIQUE = [
+  {
+    version: '1.2.0',
+    date: '2026-11-26',
+    modifications: [
+      'Nouvel outil « Surligner » : surligner, souligner, barrer, surligner une zone, en 6 couleurs',
+      'Commentaires sur les surlignages, affichés au survol',
+      'Nouvelle palette « Modifs » : liste des surlignages et commentaires, accès direct, poubelle, corbeille',
+    ],
+  },
   {
     version: '1.1.0',
     date: '2026-11-14',
@@ -86,13 +114,6 @@ export const HISTORIQUE = [
       'Organisation des pages : réordonner, supprimer, pivoter, insérer, extraire, remplacer',
       'Retouche du texte par recouvrement et ajout de zones de texte',
       'Enregistrer, enregistrer sous, annuler / rétablir',
-    ],
-  },
-  {
-    version: '0.1.0',
-    date: '2026-11-14',
-    modifications: [
-      'Socle technique : Vite, PDF.js, pdf-lib, déploiement GitHub Pages',
     ],
   },
 ];

@@ -289,3 +289,97 @@
   white-space: pre;
   line-height: 1.2;
 }
+
+/* ---------- Annotations : repères de commentaires, sélection, clignotement ---------- */
+.calque-annot {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.repere-commentaire {
+  position: absolute;
+  width: 18px !important;
+  height: 18px !important;
+  margin: -12px 0 0 -6px;
+  display: grid;
+  place-items: center;
+  border-radius: 50% 50% 50% 2px;
+  background: var(--couleur, #ffd819);
+  color: #1d1d1b;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+}
+
+.repere-commentaire svg {
+  width: 11px;
+  height: 11px;
+  stroke-width: 2.4;
+}
+
+.annot-choisie {
+  position: absolute;
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+
+.clignote {
+  position: absolute;
+  border-radius: 3px;
+  outline: 3px solid var(--accent);
+  outline-offset: 2px;
+  animation: clignoter 0.55s ease-in-out 4;
+}
+
+@keyframes clignoter {
+  50% {
+    outline-color: transparent;
+    background: rgb(194 65 12 / 0.18);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .clignote {
+    animation: none;
+  }
+}
+
+/* Outil « Surligner », mode zone : on trace un rectangle */
+.outil-surlignage.mode-zone .calque-outil {
+  pointer-events: auto;
+  cursor: crosshair;
+}
+
+.cadre-zone {
+  border-color: var(--couleur);
+  background: color-mix(in srgb, var(--couleur) 35%, transparent);
+}
+
+/* Bulle de commentaire au survol */
+.bulle-commentaire {
+  position: fixed;
+  z-index: 60;
+  max-width: 320px;
+  padding: 8px 12px;
+  border-left: 4px solid var(--couleur, var(--accent));
+  border-radius: 6px;
+  background: var(--surface);
+  color: var(--texte);
+  box-shadow: var(--ombre-flottante);
+  font-size: 13px;
+  line-height: 1.4;
+  pointer-events: none;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+
+.bulle-commentaire p {
+  margin: 0;
+}
+
+.bulle-commentaire .meta {
+  margin-top: 4px;
+  color: var(--texte-3);
+  font-size: 11px;
+}

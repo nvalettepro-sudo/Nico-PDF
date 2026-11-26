@@ -66,6 +66,7 @@
       <div class="groupe outils" role="group" aria-label="Outils">
         <button class="btn outil actif" id="outil-selection" data-outil="selection" data-icone="curseur" title="Sélectionner et copier du texte" data-doc><span>Texte</span></button>
         <button class="btn outil" id="outil-capture" data-outil="capture" data-icone="capture" title="Capture de zone : copie une zone en image" data-doc><span>Capture</span></button>
+        <button class="btn outil" id="outil-surlignage" data-outil="surlignage" data-icone="surligneur" title="Surligner, souligner, barrer du texte et le commenter" data-doc data-modif><span>Surligner</span></button>
         <button class="btn outil" id="outil-retouche" data-outil="retouche" data-icone="retouche" title="Retouche du texte" data-doc data-modif><span>Retouche</span></button>
         <button class="btn" id="btn-organiser" data-icone="grille" title="Organiser les pages" data-doc data-modif><span>Pages</span></button>
       </div>
@@ -92,9 +93,11 @@
         <div class="onglets" role="tablist">
           <button role="tab" class="onglet actif" data-onglet="miniatures">Miniatures</button>
           <button role="tab" class="onglet" data-onglet="signets">Signets</button>
+          <button role="tab" class="onglet" data-onglet="modifications" title="Surlignages, commentaires et corbeille">Modifs <span class="compteur" id="compteur-modifications" hidden></span></button>
         </div>
         <div class="contenu-onglet" id="liste-miniatures" data-contenu="miniatures"></div>
         <div class="contenu-onglet" id="liste-signets" data-contenu="signets" hidden></div>
+        <div class="contenu-onglet" id="liste-modifications" data-contenu="modifications" hidden></div>
       </aside>
 
       <section class="visionneuse" id="visionneuse" tabindex="-1">
