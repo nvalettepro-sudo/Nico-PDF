@@ -45,8 +45,10 @@ export function afficherAPropos() {
           Ce n'est pas un outil de caviardage certifié.</li>
         <li><strong>Version définitive</strong> : elle ne se « déverrouille » pas ; gardez le fichier modifiable
           pour pouvoir reprendre les retouches. Seules les retouches faites avec Nico PDF 1.2 ou plus récent sont reprises.</li>
-        <li><strong>Polices</strong> : le nouveau texte utilise Helvetica, Times ou Courier, la police la plus proche
-          de l'original. Le rendu peut légèrement différer.</li>
+        <li><strong>Polices</strong> : la retouche réutilise la police d'origine du PDF quand c'est possible.
+          Un PDF n'intègre souvent que les lettres déjà utilisées dans le document : une lettre absente
+          (par exemple une majuscule jamais employée) ne peut pas être écrite à l'identique ; Nico PDF le signale
+          et propose la police standard la plus proche (Helvetica, Times ou Courier).</li>
         <li><strong>PDF protégés par mot de passe</strong> : lecture seule.</li>
         <li><strong>Enregistrer sur le fichier d'origine</strong> : possible dans Chrome et Edge uniquement ;
           ailleurs, le fichier est téléchargé.

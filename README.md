@@ -19,7 +19,7 @@ Ces informations sont tenues à jour dans `src/version.js` (règles dans `CLAUDE
 | Thème sombre, inversion des couleurs des pages | Boutons lune et cercle |
 | Sélection et copie du texte, capture de zone en image | Outils **Texte** et **Capture** |
 | Réordonner, supprimer, pivoter, insérer, extraire, remplacer des pages | Bouton **Pages** |
-| Modifier un texte existant, ajouter une zone de texte, reprendre une retouche plus tard | Outil **Retouche** |
+| Modifier un texte existant (avec la police d'origine du PDF), ajouter une zone de texte, reprendre une retouche plus tard | Outil **Retouche** |
 | Annuler / rétablir (10 étapes) | Ctrl+Z / Ctrl+Y |
 | Enregistrer (modifiable) / Enregistrer sous | Ctrl+S / Ctrl+Maj+S |
 | Enregistrer en version définitive (ancien texte retiré, retouches figées) | Bouton à droite d'« Enregistrer sous » |
@@ -70,7 +70,7 @@ Une fois la page chargée, l'application fonctionne sans Internet tant que l'ong
 ## Tester
 
 - Fichiers de test : `tests/fixtures/` (texte simple, document avec signets, scan).
-- Checklists de tests manuels : [`tests/checklist-v1.md`](tests/checklist-v1.md), [`tests/checklist-v1.2.md`](tests/checklist-v1.2.md).
+- Checklists de tests manuels : [`tests/checklist-v1.md`](tests/checklist-v1.md), [`tests/checklist-v1.2.md`](tests/checklist-v1.2.md), [`tests/checklist-v1.3.md`](tests/checklist-v1.3.md).
 - Pour recréer les fichiers de test : `npm run creer-fixtures` (nécessite Playwright pour le scan).
 
 ## Organisation du code
@@ -88,6 +88,7 @@ src/pdf/edit-text.js     retouche du texte (pdf-lib)
 src/pdf/retouches.js     mémoire des retouches dans le fichier (reprise plus tard)
 src/pdf/effacer-texte.js effacement réel de l'ancien texte (version définitive)
 src/pdf/definitif.js     création et vérification de la version définitive
+src/pdf/police-origine.js réutilisation de la police d'origine du PDF
 src/pdf/save.js          fichiers : ouvrir, enregistrer, télécharger
 src/ui/                  barre d'outils, panneaux, boîtes de dialogue, thème…
 src/styles/              apparence
