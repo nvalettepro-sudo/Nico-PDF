@@ -3,8 +3,8 @@
 //
 // RÈGLES DE MISE À JOUR (à appliquer à chaque modification) :
 // 1. Augmenter le numéro dans package.json (« version ») :
-//    - correctif ou retouche d'apparence      : 1.2.0 -> 1.2.1
-//    - fonction ajoutée, modifiée ou retirée  : 1.2.0 -> 1.3.0
+//    - correctif ou retouche d'apparence      : 1.3.0 -> 1.3.1
+//    - fonction ajoutée, modifiée ou retirée  : 1.3.0 -> 1.4.0
 //    - nouvelle version du cahier des charges : 1.x  -> 2.0.0
 // 2. Ajouter en tête de HISTORIQUE la nouvelle version et ses modifications majeures.
 //    Garder seulement les 4 dernières versions.
@@ -56,9 +56,10 @@ export const FONCTIONS = [
   {
     theme: 'Palette « Modifications »',
     elements: [
-      'Onglet « Modifs » du panneau gauche : surlignages, surlignages commentés, corbeille',
+      'Onglet « Modifs » du panneau gauche : surlignages, surlignages commentés, retouches de texte, corbeille',
       'Clic sur un élément : la vue s\'y place et il clignote',
       'Poubelle sur chaque élément ; corbeille pour restaurer (jusqu\'à la fermeture du document)',
+      'Retirer une retouche de texte : le texte d\'origine réapparaît',
       'Annotations faites dans d\'autres logiciels listées et supprimables aussi',
     ],
   },
@@ -68,6 +69,7 @@ export const FONCTIONS = [
       'Modifier un texte existant (par recouvrement)',
       'Ajouter une zone de texte',
       'Police, taille, gras, italique et couleur réglables',
+      'Chaque retouche est listée dans l\'onglet « Modifs » et peut être retirée seule (retouches faites depuis la version 1.3)',
     ],
   },
   {
@@ -82,6 +84,14 @@ export const FONCTIONS = [
 
 /** Les 4 dernières versions, de la plus récente à la plus ancienne. */
 export const HISTORIQUE = [
+  {
+    version: '1.3.0',
+    date: '2026-11-26',
+    modifications: [
+      'Retouches de texte listées dans la palette « Modifs » (avant → après), avec accès direct',
+      'Retirer une retouche fait réapparaître le texte d\'origine ; restauration possible depuis la corbeille',
+    ],
+  },
   {
     version: '1.2.0',
     date: '2026-11-26',
@@ -103,17 +113,6 @@ export const HISTORIQUE = [
     date: '2026-11-14',
     modifications: [
       'Notifications : pastille de couleur à la place de la bordure latérale',
-    ],
-  },
-  {
-    version: '1.0.0',
-    date: '2026-11-14',
-    modifications: [
-      'Lecteur complet : affichage, miniatures, signets, zoom, modes, recherche, thème sombre',
-      'Copie du texte et capture de zone',
-      'Organisation des pages : réordonner, supprimer, pivoter, insérer, extraire, remplacer',
-      'Retouche du texte par recouvrement et ajout de zones de texte',
-      'Enregistrer, enregistrer sous, annuler / rétablir',
     ],
   },
 ];

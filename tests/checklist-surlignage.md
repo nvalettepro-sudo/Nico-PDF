@@ -1,4 +1,4 @@
-# Checklist de tests manuels — Surlignage, commentaires et palette « Modifs »
+# Checklist de tests manuels — Surlignage, commentaires, palette « Modifs » et retouches
 
 À dérouler dans **Chrome ou Edge**, avec `tests/fixtures/texte-simple.pdf` (et `scan.pdf` pour les zones).
 Cochez chaque ligne quand le résultat attendu est obtenu.
@@ -40,7 +40,19 @@ Cochez chaque ligne quand le résultat attendu est obtenu.
 - [ ] Les titres de section se replient / se déplient.
 - [ ] Ouvrir un autre PDF → la corbeille est vidée.
 
-## 5. Fichier enregistré
+## 5. Retouches de texte dans la palette
+
+- [ ] Outil **Retouche** : modifier un texte, puis ajouter une zone de texte.
+- [ ] Onglet **Modifs**, section **Retouches de texte** : « ancien texte » → « nouveau texte », et « Texte ajouté : … ».
+- [ ] Clic sur une retouche → la vue va dessus, elle clignote.
+- [ ] Poubelle sur une retouche → le **texte d'origine réapparaît** ; la retouche passe dans la corbeille.
+- [ ] **Restaurer** depuis la corbeille → la retouche revient, avec la même police, taille et couleurs.
+- [ ] Retoucher une page, puis la déplacer (bouton **Pages**) → la palette affiche le nouveau numéro de page ; retirer la retouche fonctionne.
+- [ ] Supprimer la page retouchée → la retouche disparaît de la liste.
+- [ ] Enregistrer, fermer, rouvrir → les retouches sont toujours listées et peuvent être retirées.
+- [ ] Un PDF retouché avec une version antérieure à 1.3 : ses retouches ne sont pas listées (normal).
+
+## 6. Fichier enregistré
 
 - [ ] Enregistrer, fermer, rouvrir → surlignages et commentaires sont toujours là et listés.
 - [ ] Ouvrir le fichier dans **Acrobat Reader** ou **Edge** → surlignages visibles, commentaires lisibles.

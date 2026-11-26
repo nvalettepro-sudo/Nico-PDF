@@ -1,10 +1,11 @@
 // Palette « Modifications » (onglet du panneau gauche) : liste de tout ce qui a été ajouté au document.
-// Sections : surlignages, commentaires, corbeille.
+// Sections : surlignages, surlignages commentés, retouches de texte, corbeille.
 // Clic sur un élément : la vue se place dessus et il clignote. Poubelle : suppression (récupérable).
 import { etat, on } from '../state.js';
 import { montrerZone } from '../pdf/render.js';
 import {
   inventaire, corbeille, supprimerUneAnnotation, modifierUneAnnotation, restaurer, viderCorbeille,
+  supprimerUneRetouche,
 } from '../modifications.js';
 import { faireClignoter, choisir, versCss } from './outil-surlignage.js';
 import { icone } from './icones.js';
@@ -53,19 +54,44 @@ function ligneAnnotation(a, index) {
     </li>`;
 }
 
+/** « avant » → « après » (ou « Texte ajouté »). */
+function resumeRetouche(r, max = 60) {
+  const apres = `« ${court(r.texte, max)} »`;
+  return r.texteOrigine ? `« ${court(r.texteOrigine, max)} » → ${apres}` : `Texte ajouté : ${apres}`;
+}
+
+function ligneRetouche(r, index) {
+  const actions = etat.lectureSeule ? '' : `
+      <button class="btn-icone petit" data-action="retirer" data-index="${index}" title="Retirer la retouche (le texte d'origine revient ; récupérable dans la corbeille)">${icone('corbeille')}</button>`;
+  return `
+    <li class="modif">
+      <button class="modif-corps" data-action="aller-retouche" data-index="${index}" title="Afficher dans le document">
+        <span class="pastille carree" style="background:${versCss(r.reglages?.fond ?? [1, 1, 1])}; color:${versCss(r.couleur)}">T</span>
+        <span class="modif-texte">
+          <span class="extrait">${echapper(resumeRetouche(r))}</span>
+          <span class="meta">p. ${r.page} · ${r.texteOrigine ? 'Texte retouché' : 'Texte ajouté'}${r.date ? ` · ${dateCourte(new Date(r.date))}` : ''}</span>
+        </span>
+      </button>
+      <span class="modif-actions">${actions}</span>
+    </li>`;
+}
+
 function ligneCorbeille(entree, index) {
   const a = entree.element;
-  const titre = a.commentaire ? court(a.commentaire, 70) : (a.extrait ? `« ${court(a.extrait, 70)} »` : a.libelle);
+  const retouche = entree.genre === 'retouche';
+  const libelle = retouche ? (a.texteOrigine ? 'Texte retouché' : 'Texte ajouté') : a.libelle;
+  let titre = a.commentaire ? court(a.commentaire, 70) : (a.extrait ? `« ${court(a.extrait, 70)} »` : a.libelle);
+  if (retouche) titre = resumeRetouche(a, 30);
   const actions = etat.lectureSeule ? '' : `
       <button class="btn-icone petit" data-action="restaurer" data-index="${index}" title="Restaurer dans le document">${icone('restaurer')}</button>
       <button class="btn-icone petit" data-action="oublier" data-index="${index}" title="Retirer définitivement de la corbeille">${icone('fermer')}</button>`;
   return `
     <li class="modif dans-corbeille">
       <div class="modif-corps">
-        <span class="pastille" style="background:${versCss(a.couleur)}"></span>
+        <span class="pastille${retouche ? ' carree' : ''}" style="background:${versCss(retouche ? (a.reglages?.fond ?? [1, 1, 1]) : a.couleur)}">${retouche ? 'T' : ''}</span>
         <span class="modif-texte">
           <span class="extrait">${echapper(titre)}</span>
-          <span class="meta">p. ${a.page} · ${echapper(a.libelle)} · supprimé à ${entree.supprimeLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
+          <span class="meta">p. ${a.page} · ${echapper(libelle)} · supprimé à ${entree.supprimeLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
         </span>
       </div>
       <span class="modif-actions">${actions}</span>
@@ -86,11 +112,11 @@ function section(cle, titre, nombre, contenu, vide, extra = '') {
     </section>`;
 }
 
-let elementsAffiches = { annotations: [], corbeille: [] };
+let elementsAffiches = { annotations: [], retouches: [], corbeille: [] };
 
 function dessiner() {
   if (!liste) return;
-  const total = inventaire.annotations.length;
+  const total = inventaire.annotations.length + inventaire.retouches.length;
   compteur.textContent = total ? String(total) : '';
   compteur.hidden = !total;
   if (!etat.pdf) {
@@ -101,7 +127,8 @@ function dessiner() {
   const commentaires = [];
   inventaire.annotations.forEach((a) => (a.commentaire ? commentaires : surlignages).push(a));
   const annotations = [...surlignages, ...commentaires];
-  elementsAffiches = { annotations, corbeille: [...corbeille] };
+  const { retouches } = inventaire;
+  elementsAffiches = { annotations, retouches: [...retouches], corbeille: [...corbeille] };
   const indice = (a) => annotations.indexOf(a);
 
   const boutonVider = corbeille.length && !etat.lectureSeule
@@ -112,6 +139,8 @@ function dessiner() {
     'Aucun surlignage. Outil <strong>Surligner</strong> dans la barre du haut.')}
     ${section('commentaires', 'Surlignages commentés', commentaires.length, commentaires.map((a) => ligneAnnotation(a, indice(a))).join(''),
     'Aucun commentaire. Cliquez sur un surlignage avec l\'outil <strong>Surligner</strong> pour le commenter.')}
+    ${section('retouches', 'Retouches de texte', retouches.length, retouches.map(ligneRetouche).join(''),
+    'Aucune retouche. Outil <strong>Retouche</strong> dans la barre du haut. (Les retouches faites avant la version 1.3 ne sont pas listées.)')}
     ${section('corbeille', 'Corbeille', corbeille.length, corbeille.map(ligneCorbeille).join(''),
     'Vide. Les éléments supprimés arrivent ici et peuvent être restaurés jusqu\'à la fermeture du document.', boutonVider)}`;
 }
@@ -139,6 +168,13 @@ async function surClic(e) {
     else viderCorbeille(entree);
     return;
   }
+  if (action === 'aller-retouche' || action === 'retirer') {
+    const r = elementsAffiches.retouches[index];
+    if (!r) return;
+    if (action === 'retirer') supprimerUneRetouche(r);
+    else allerA(r);
+    return;
+  }
   const a = elementsAffiches.annotations[index];
   if (!a) return;
   if (action === 'aller') allerA(a);
@@ -151,7 +187,7 @@ function allerA(a) {
   montrerZone(a.page, a.cadre);
   // Laisse le temps au défilement (et au mode page simple) de s'appliquer
   requestAnimationFrame(() => faireClignoter(a.page, a.rects));
-  if (etat.outil === 'surlignage') choisir(a);
+  if (etat.outil === 'surlignage' && a.ref) choisir(a);
 }
 
 async function commenter(a) {

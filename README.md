@@ -20,7 +20,7 @@ Ces informations sont tenues à jour dans `src/version.js` (règles dans `CLAUDE
 | Sélection et copie du texte, capture de zone en image | Outils **Texte** et **Capture** |
 | Réordonner, supprimer, pivoter, insérer, extraire, remplacer des pages | Bouton **Pages** |
 | Surligner, souligner, barrer, surligner une zone, commenter | Outil **Surligner** |
-| Liste des surlignages et commentaires, accès direct, poubelle, corbeille | Panneau gauche, onglet **Modifs** |
+| Liste des surlignages, commentaires et retouches de texte : accès direct, poubelle, corbeille | Panneau gauche, onglet **Modifs** |
 | Modifier un texte existant, ajouter une zone de texte | Outil **Retouche** |
 | Annuler / rétablir (10 étapes) | Ctrl+Z / Ctrl+Y |
 | Enregistrer / Enregistrer sous | Ctrl+S / Ctrl+Maj+S |

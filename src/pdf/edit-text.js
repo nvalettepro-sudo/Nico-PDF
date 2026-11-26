@@ -2,7 +2,13 @@
 // 1. un rectangle de la couleur du fond cache l'ancien texte ;
 // 2. le nouveau texte est dessiné par-dessus avec la police standard la plus proche.
 // LIMITE : l'ancien texte reste dans le fichier, sous le rectangle (il reste copiable et cherchable).
-import { StandardFonts, rgb, degrees } from 'pdf-lib';
+//
+// Chaque retouche est dessinée dans son propre bloc (flux de contenu) de la page, et notée dans un
+// registre caché dans les propriétés du fichier (clé « NicoRetouches »). Elle peut ainsi être listée
+// dans la palette « Modifs », puis retirée seule : l'ancien texte, toujours dessous, réapparaît.
+import {
+  StandardFonts, rgb, degrees, PDFName, PDFHexString, PDFString, PDFArray, PDFRef,
+} from 'pdf-lib';
 
 // ---------- Analyse du texte de la page ----------
 
@@ -279,12 +285,17 @@ function isolerContenuExistant(doc, page) {
  * @param {number} r.taille taille en points
  * @param {number[]} r.couleur couleur du texte (RVB 0 à 1)
  * @param {number[]} r.fond couleur du recouvrement (RVB 0 à 1)
+ * @param {string} [r.texteOrigine] texte remplacé (vide pour une zone de texte ajoutée)
+ * @param {string} [r.id] identifiant (repris lors d'une restauration depuis la corbeille)
  * @returns {Promise<string[]>} caractères qui ont dû être remplacés
  */
 export async function appliquerRetouche(doc, r) {
   const page = doc.getPage(r.page - 1);
   isolerContenuExistant(doc, page);
   const angleDeg = (r.angle * 180) / Math.PI;
+  // Bloc de dessin réservé à cette retouche (pour pouvoir la retirer seule ensuite)
+  page.getContentStream(false);
+  const points = r.recouvrement ? coinsZone(r.recouvrement) : [];
 
   if (r.recouvrement) {
     const z = r.recouvrement;
@@ -306,14 +317,129 @@ export async function appliquerRetouche(doc, r) {
   const sin = Math.sin(r.angle);
   texte.split('\n').forEach((ligne, i) => {
     if (!ligne) return;
+    const x = r.origine[0] + sin * interligne * i;
+    const y = r.origine[1] - cos * interligne * i;
     page.drawText(ligne, {
-      x: r.origine[0] + sin * interligne * i,
-      y: r.origine[1] - cos * interligne * i,
+      x,
+      y,
       size: r.taille,
       font: police,
       color: rgb(...r.couleur),
       rotate: degrees(angleDeg),
     });
+    // Emprise de la ligne, pour retrouver la retouche à l'écran
+    const largeur = police.widthOfTextAtSize(ligne, r.taille);
+    points.push(...coinsZone({
+      x: x + sin * r.taille * 0.25, y: y - cos * r.taille * 0.25, largeur, hauteur: r.taille * 1.15, angle: r.angle,
+    }));
   });
+  if (!points.length) points.push(r.origine);
+
+  const registre = lireRegistre(doc);
+  registre.push({
+    id: r.id ?? `r${Date.now().toString(36)}${Math.floor(Math.random() * 1e6).toString(36)}`,
+    page: r.page,
+    pageRef: texteRef(page.ref),
+    flux: texteRef(page.contentStreamRef),
+    date: new Date().toISOString(),
+    texteOrigine: r.texteOrigine ?? '',
+    texte: r.texte,
+    cadre: [
+      Math.min(...points.map((p) => p[0])), Math.min(...points.map((p) => p[1])),
+      Math.max(...points.map((p) => p[0])), Math.max(...points.map((p) => p[1])),
+    ].map((v) => Math.round(v * 100) / 100),
+    // Réglages complets, pour restaurer la retouche depuis la corbeille
+    reglages: {
+      recouvrement: r.recouvrement,
+      origine: r.origine,
+      angle: r.angle,
+      famille: r.famille,
+      gras: r.gras,
+      italique: r.italique,
+      taille: r.taille,
+      couleur: r.couleur,
+      fond: r.fond,
+    },
+  });
+  ecrireRegistre(doc, registre);
   return remplaces;
+}
+
+// ---------- Registre des retouches ----------
+
+const CLE_REGISTRE = PDFName.of('NicoRetouches');
+
+/** « 12 0 » <-> référence pdf-lib. */
+function texteRef(ref) {
+  return `${ref.objectNumber} ${ref.generationNumber}`;
+}
+
+function refDepuis(texte) {
+  const [num, gen] = String(texte).split(' ').map(Number);
+  return Number.isInteger(num) ? PDFRef.of(num, gen || 0) : null;
+}
+
+/** Lit le registre des retouches (pdf-lib). */
+export function lireRegistre(doc) {
+  const brut = doc.getInfoDict().lookup(CLE_REGISTRE);
+  if (!(brut instanceof PDFHexString || brut instanceof PDFString)) return [];
+  try {
+    const liste = JSON.parse(brut.decodeText());
+    return Array.isArray(liste) ? liste : [];
+  } catch {
+    return [];
+  }
+}
+
+/** Écrit le registre, en oubliant les retouches dont la page a été supprimée. */
+function ecrireRegistre(doc, liste) {
+  const pages = new Set(doc.getPages().map((p) => texteRef(p.ref)));
+  const valides = liste.filter((e) => pages.has(e.pageRef));
+  const info = doc.getInfoDict();
+  if (valides.length) info.set(CLE_REGISTRE, PDFHexString.fromText(JSON.stringify(valides)));
+  else info.delete(CLE_REGISTRE);
+}
+
+/**
+ * Lit le registre avec PDF.js (pour la palette).
+ * @returns {Promise<Array<object>>}
+ */
+export async function lireRegistrePdfjs(pdf) {
+  try {
+    const { info } = await pdf.getMetadata();
+    const perso = info?.Custom;
+    const texte = perso instanceof Map ? perso.get('NicoRetouches') : perso?.NicoRetouches;
+    const liste = typeof texte === 'string' ? JSON.parse(texte) : [];
+    return Array.isArray(liste) ? liste : [];
+  } catch (erreur) {
+    console.warn('Registre des retouches illisible', erreur);
+    return [];
+  }
+}
+
+/**
+ * Retire une retouche : son bloc de dessin est supprimé, le texte d'origine réapparaît.
+ * @returns {boolean} false si le bloc n'existe plus (fichier modifié par un autre logiciel) :
+ *   la retouche est alors seulement retirée de la liste.
+ */
+export function supprimerRetouche(doc, id) {
+  const registre = lireRegistre(doc);
+  const entree = registre.find((e) => e.id === id);
+  if (!entree) throw new Error('Cette retouche est introuvable dans le fichier.');
+  let retiree = false;
+  const page = doc.getPages().find((p) => texteRef(p.ref) === entree.pageRef);
+  const flux = refDepuis(entree.flux);
+  const contenus = page?.node.Contents();
+  if (flux && contenus instanceof PDFArray) {
+    for (let i = contenus.size() - 1; i >= 0; i--) {
+      const brut = contenus.get(i);
+      if (brut instanceof PDFRef && brut.objectNumber === flux.objectNumber && brut.generationNumber === flux.generationNumber) {
+        contenus.remove(i);
+        doc.context.delete(flux);
+        retiree = true;
+      }
+    }
+  }
+  ecrireRegistre(doc, registre.filter((e) => e !== entree));
+  return retiree;
 }

@@ -62,7 +62,8 @@ function ouvrirPanneau() {
       <div class="avertissement" data-icone="attention">
         <div><strong>Retouche par recouvrement.</strong> Le texte d'origine est caché sous un rectangle
         mais <strong>reste dans le fichier</strong> : il peut encore être copié ou trouvé par une recherche.
-        Ne l'utilisez pas pour masquer une information sensible.</div>
+        Ne l'utilisez pas pour masquer une information sensible.
+        Chaque retouche est listée dans l'onglet <strong>Modifs</strong> et peut y être retirée.</div>
       </div>
       <p class="consigne" id="consigne-retouche">Cliquez sur un texte de la page pour le modifier.</p>
       <button class="btn" id="btn-placer-texte" data-icone="texte"><span>Ajouter une zone de texte</span></button>
@@ -280,11 +281,13 @@ async function appliquer() {
     notifier('Saisissez un texte à ajouter.', 'attention');
     return;
   }
-  const { page, origine, angle, recouvrement } = edition;
+  const {
+    page, origine, angle, recouvrement, segment,
+  } = edition;
   let remplaces = [];
   const ok = await appliquerModification(async (doc) => {
     remplaces = await appliquerRetouche(doc, {
-      page, origine, angle, recouvrement, ...v,
+      page, origine, angle, recouvrement, texteOrigine: segment?.texte ?? '', ...v,
     });
   }, { message: recouvrement ? 'Texte retouché.' : 'Zone de texte ajoutée.' });
   if (ok) {
