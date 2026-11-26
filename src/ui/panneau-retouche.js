@@ -39,7 +39,7 @@ export function initRetouche(element) {
 
   on('outil', (outil) => {
     if (outil === 'retouche') ouvrirPanneau();
-    else fermerPanneau();
+    else if (panneau.querySelector('#formulaire-retouche')) fermerPanneau(); // ne pas fermer le panneau d'un autre outil
   });
   on('document', () => {
     cacheSegments = new Map();

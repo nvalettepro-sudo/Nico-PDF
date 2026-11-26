@@ -1,4 +1,4 @@
-// Panneau gauche : miniatures des pages et signets (arborescence).
+// Panneau gauche : miniatures des pages, signets (arborescence) et palette « Modifications ».
 import { etat, on } from '../state.js';
 import { allerPage } from '../pdf/render.js';
 import { icone } from './icones.js';
@@ -33,7 +33,9 @@ export function initPanneauGauche() {
   on('page', surlignerPageCourante);
 }
 
-function choisirOnglet(nom) {
+export function choisirOnglet(nom) {
+  // La palette des modifications a besoin de plus de place : le panneau s'élargit.
+  document.body.classList.toggle('panneau-large', nom === 'modifications');
   document.querySelectorAll('#panneau-gauche .onglet').forEach((o) => {
     const actif = o.dataset.onglet === nom;
     o.classList.toggle('actif', actif);
@@ -49,7 +51,8 @@ export async function construirePanneau(pdf, { garderOnglet = false } = {}) {
   generation++;
   construireMiniatures(pdf);
   const aDesSignets = await construireSignets(pdf);
-  if (!garderOnglet) choisirOnglet(aDesSignets ? 'signets' : 'miniatures');
+  const actuel = document.querySelector('#panneau-gauche .onglet.actif')?.dataset.onglet;
+  if (!garderOnglet && actuel !== 'modifications') choisirOnglet(aDesSignets ? 'signets' : 'miniatures');
 }
 
 export function viderPanneau() {

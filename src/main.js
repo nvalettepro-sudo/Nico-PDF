@@ -15,6 +15,9 @@ import { initCapture } from './ui/capture.js';
 import { initOrganiser } from './ui/organiser.js';
 import { initBarreOutils } from './ui/barre-outils.js';
 import { initRetouche } from './ui/panneau-retouche.js';
+import { initModifications } from './modifications.js';
+import { initSurlignage } from './ui/outil-surlignage.js';
+import { initPalette } from './ui/palette-modifications.js';
 import { signalerErreur } from './ui/dialogues.js';
 
 function demarrer() {
@@ -27,6 +30,9 @@ function demarrer() {
   initCapture(visionneuse);
   initOrganiser();
   initRetouche(visionneuse);
+  initModifications();
+  initSurlignage(visionneuse);
+  initPalette();
   initBarreOutils();
 
   // Le panneau des miniatures suit le document

@@ -78,9 +78,9 @@ export function initBarreOutils() {
   majEtatBoutons();
 }
 
-/** Change d'outil : sélection de texte, capture de zone ou retouche. */
+/** Change d'outil : sélection de texte, capture de zone, surlignage ou retouche. */
 export function choisirOutil(outil) {
-  if (outil === 'retouche' && etat.lectureSeule) return;
+  if ((outil === 'retouche' || outil === 'surlignage') && etat.lectureSeule) return;
   etat.outil = outil;
   document.querySelectorAll('[data-outil]').forEach((b) => {
     const actif = b.dataset.outil === outil;
@@ -127,7 +127,7 @@ function majEtatBoutons() {
   $('accueil').hidden = ouvert;
   $('choix-mode').value = etat.modeAffichage;
   document.body.classList.toggle('lecture-seule', etat.lectureSeule);
-  if (etat.lectureSeule && etat.outil === 'retouche') choisirOutil('selection');
+  if (etat.lectureSeule && (etat.outil === 'retouche' || etat.outil === 'surlignage')) choisirOutil('selection');
 }
 
 function pagePrecedente() {

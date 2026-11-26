@@ -1,8 +1,8 @@
 // Visionneuse : affiche les pages dans la zone centrale.
 // Seules les pages visibles (et leurs voisines) sont dessinées, pour tenir sur de gros fichiers.
 // Chaque page contient : un canvas (l'image de la page), un calque de texte PDF.js
-// (texte invisible mais sélectionnable), un calque de surlignage (recherche)
-// et un calque d'outil (capture, retouche…).
+// (texte invisible mais sélectionnable), un calque de surlignage (recherche),
+// un calque d'annotations (repères de commentaires, clignotement) et un calque d'outil (capture, retouche…).
 import { pdfjsLib } from './loader.js';
 import { etat, emit } from '../state.js';
 
@@ -99,7 +99,7 @@ export async function afficherDocument(pdf, { page = 1, conserverPosition = fals
     const div = document.createElement('div');
     div.className = 'page';
     div.dataset.page = String(i + 1);
-    div.innerHTML = `<div class="textLayer"></div><div class="calque-surlignage"></div><div class="calque-outil"></div>`;
+    div.innerHTML = `<div class="textLayer"></div><div class="calque-surlignage"></div><div class="calque-annot"></div><div class="calque-outil"></div>`;
     fragment.append(div);
     return div;
   });
@@ -445,6 +445,21 @@ export function rectangleVersEcran(vue, [x1, y1, x2, y2]) {
   const [ax, ay] = vue.convertToViewportPoint(x1, y1);
   const [bx, by] = vue.convertToViewportPoint(x2, y2);
   return [Math.min(ax, bx), Math.min(ay, by), Math.max(ax, bx), Math.max(ay, by)];
+}
+
+/**
+ * Place un élément sur un rectangle PDF de la page n, en pourcentages de la page :
+ * il reste à sa place quand le zoom change.
+ */
+export function placerEnPourcentage(element, n, rectPdf) {
+  const vue = viewportPage(n);
+  if (!vue) return false;
+  const [gauche, haut, droite, bas] = rectangleVersEcran(vue, rectPdf);
+  element.style.left = `${(gauche / vue.width) * 100}%`;
+  element.style.top = `${(haut / vue.height) * 100}%`;
+  element.style.width = `${((droite - gauche) / vue.width) * 100}%`;
+  element.style.height = `${((bas - haut) / vue.height) * 100}%`;
+  return true;
 }
 
 /** Géométrie d'affichage de la page n au zoom actuel. */

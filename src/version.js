@@ -44,6 +44,26 @@ export const FONCTIONS = [
     ],
   },
   {
+    theme: 'Surlignage et commentaires',
+    elements: [
+      'Surligner, souligner ou barrer du texte sélectionné (6 couleurs)',
+      'Surligner une zone rectangulaire (plans, scans sans texte)',
+      'Commenter un surlignage ; bulle du commentaire au survol',
+      'Changer la couleur ou supprimer un élément',
+      'Annotations PDF standard, visibles dans Acrobat, Edge, Chrome…',
+    ],
+  },
+  {
+    theme: 'Palette « Modifications »',
+    elements: [
+      'Onglet « Modifs » du panneau gauche : surlignages, surlignages commentés, retouches de texte, corbeille',
+      'Clic sur un élément : la vue s\'y place et il clignote',
+      'Poubelle sur chaque élément ; corbeille pour restaurer (jusqu\'à la fermeture du document)',
+      'Retirer une retouche de texte : le texte d\'origine réapparaît',
+      'Annotations faites dans d\'autres logiciels listées et supprimables aussi',
+    ],
+  },
+  {
     theme: 'Retouche',
     elements: [
       'Modifier un texte existant (par recouvrement)',
@@ -51,6 +71,7 @@ export const FONCTIONS = [
       'Police d\'origine du PDF réutilisée à l\'identique, avec contrôle des lettres disponibles',
       'Sinon, police standard la plus proche (d\'après le vrai nom de la police), taille, gras, italique et couleur réglables',
       'Reprendre une retouche plus tard : la corriger, la déplacer ou la supprimer',
+      'Retouches listées dans l\'onglet « Modifs » (avant → après), retirables depuis la liste',
     ],
   },
   {
@@ -66,6 +87,15 @@ export const FONCTIONS = [
 
 /** Les 4 dernières versions, de la plus récente à la plus ancienne. */
 export const HISTORIQUE = [
+  {
+    version: '1.4.0',
+    date: '2026-11-26',
+    modifications: [
+      'Nouvel outil « Surligner » : surligner, souligner, barrer, surligner une zone, en 6 couleurs ; commentaires affichés au survol',
+      'Nouvelle palette « Modifs » : surlignages, commentaires et retouches de texte, accès direct, poubelle',
+      'Corbeille : un élément supprimé par erreur peut être restauré',
+    ],
+  },
   {
     version: '1.3.0',
     date: '2026-11-26',
@@ -89,13 +119,6 @@ export const HISTORIQUE = [
     date: '2026-11-14',
     modifications: [
       'Fenêtre « À propos » : liste des fonctions, numéro de version et historique des versions',
-    ],
-  },
-  {
-    version: '1.0.1',
-    date: '2026-11-14',
-    modifications: [
-      'Notifications : pastille de couleur à la place de la bordure latérale',
     ],
   },
 ];

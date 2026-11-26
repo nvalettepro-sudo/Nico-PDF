@@ -13,7 +13,7 @@ export const etat = {
   modeZoom: 'largeur', // 'libre' | 'largeur' | 'page'
   rotationVue: 0, // rotation de l'affichage seulement (0, 90, 180, 270)
   modeAffichage: 'continu', // 'continu' | 'simple' | 'double'
-  outil: 'selection', // 'selection' | 'capture' | 'retouche'
+  outil: 'selection', // 'selection' | 'capture' | 'surlignage' | 'retouche'
   modifie: false, // modifications non enregistrées
   lectureSeule: false, // PDF chiffré : aucune modification possible
 };

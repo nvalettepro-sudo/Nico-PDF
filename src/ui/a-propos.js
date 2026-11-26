@@ -53,7 +53,8 @@ export function afficherAPropos() {
         <li><strong>Enregistrer sur le fichier d'origine</strong> : possible dans Chrome et Edge uniquement ;
           ailleurs, le fichier est téléchargé.
           ${accesFichiersDisponible ? '<em>(disponible dans ce navigateur)</em>' : '<em>(non disponible dans ce navigateur)</em>'}</li>
-        <li><strong>Hors périmètre</strong> : annotations, formulaires, caviardage, comparaison de versions.</li>
+        <li><strong>Surlignage</strong> : il faut un texte sélectionnable ; sinon (scan, plan), utiliser le type « Zone ». La corbeille est vidée à l'ouverture d'un autre document.</li>
+        <li><strong>Hors périmètre</strong> : formulaires, caviardage, comparaison de versions.</li>
       </ul>
 
       <h3>Historique des versions</h3>
