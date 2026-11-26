@@ -17,7 +17,7 @@ Le numéro lui-même est dans `package.json` (`version`).
 2. **Ajouter une entrée en tête de `HISTORIQUE`** (version, date, modifications majeures en français simple).
    Garder **les 4 dernières versions** seulement : supprimer la plus ancienne.
 3. **Mettre à jour `FONCTIONS`** à chaque ajout, modification ou suppression de fonction.
-4. Mettre à jour le tableau des fonctions du `README.md` si besoin.
+4. Mettre à jour le `README.md` : ligne « Version actuelle », tableau des fonctions, limites et « Suite prévue » si besoin.
 
 `scripts/verifier-version.mjs` (lancé avant `npm run dev` et `npm run build`) bloque si la version de
 `package.json` n'est pas la première de l'historique ou si l'historique dépasse 4 versions.

@@ -5,7 +5,8 @@
 Lecteur et retoucheur de PDF qui s'ouvre dans le navigateur (Chrome ou Edge).
 Usage personnel. **Les PDF ne quittent jamais l'ordinateur** : aucun serveur, aucun suivi.
 
-**Version actuelle : voir la fenêtre ⓘ À propos** (numéro de version, liste des fonctions, historique des 4 dernières versions).
+**Version actuelle : 1.3.0** — le détail (liste des fonctions, historique des 4 dernières versions)
+est dans l'application : bouton **ⓘ À propos**, en haut à droite.
 Ces informations sont tenues à jour dans `src/version.js` (règles dans `CLAUDE.md`).
 
 ## Fonctions
@@ -24,7 +25,39 @@ Ces informations sont tenues à jour dans `src/version.js` (règles dans `CLAUDE
 | Enregistrer (modifiable) / Enregistrer sous | Ctrl+S / Ctrl+Maj+S |
 | Enregistrer en version définitive (ancien texte retiré, retouches figées) | Bouton à droite d'« Enregistrer sous » |
 
-Les limites (retouche par recouvrement, polices, PDF protégés…) sont détaillées dans l'application : bouton **ⓘ À propos**.
+## Retoucher du texte : mode d'emploi
+
+1. Outil **Retouche** → cliquer sur un texte de la page.
+2. Le panneau de droite propose la **police d'origine du PDF** (ex. « Police d'origine : Calibri (identique) »),
+   la taille et les couleurs d'origine. Corriger le texte, puis **Appliquer**.
+3. Enregistrer selon le besoin :
+
+| Enregistrement | Ce qu'il fait | Quand l'utiliser |
+| --- | --- | --- |
+| **Enregistrer** (Ctrl+S) — *modifiable* | Les retouches sont mémorisées dans le fichier : en le rouvrant, un clic sur une retouche permet de la corriger, la déplacer ou la supprimer. L'ancien texte reste caché dessous. | Pendant le travail |
+| **Enregistrer en version définitive** | Crée « … (définitif).pdf » : l'ancien texte est **réellement retiré** (vérifié automatiquement), les retouches sont figées. Le texte reste sélectionnable. Le fichier modifiable est conservé. | Avant d'envoyer le document |
+
+## Limites à connaître
+
+- **Lettres disponibles** : un PDF n'intègre souvent que les lettres déjà utilisées dans le document.
+  Une lettre absente de la police d'origine est signalée ; il faut alors choisir une police proche (Helvetica, Times ou Courier).
+- **Aperçu** pendant la saisie : approximatif ; le rendu exact apparaît après « Appliquer » (Ctrl+Z possible).
+- **Version définitive** : le texte placé dans des blocs imbriqués (fréquent dans certains exports de plans)
+  ou dans des polices à encodage rare peut ne pas être retiré. Nico PDF le signale avant d'enregistrer.
+- **Retouches faites avant la version 1.2** : elles ne peuvent pas être reprises.
+- **PDF protégés par mot de passe** : lecture seule.
+- **Enregistrer sur le fichier d'origine** : Chrome et Edge uniquement ; ailleurs, le fichier est téléchargé.
+- **Hors périmètre** : annotations, formulaires, caviardage certifié, comparaison de versions.
+
+Toutes les limites sont aussi rappelées dans l'application (bouton **ⓘ À propos**).
+
+## Suite prévue
+
+| Version | Contenu | État |
+| --- | --- | --- |
+| 1.x | Lecteur, organisation des pages, retouche du texte, police d'origine, version définitive | ✅ disponible |
+| 2 | Signature, diviser un PDF, compresser, modifier les images, export JPG | Plan validé, à démarrer |
+| 3 | PDF protégés, impression avancée, fusion, OCR, PDF aplati | À venir |
 
 ## Installer (une seule fois)
 
@@ -70,14 +103,19 @@ Une fois la page chargée, l'application fonctionne sans Internet tant que l'ong
 ## Tester
 
 - Fichiers de test : `tests/fixtures/` (texte simple, document avec signets, scan).
-- Checklists de tests manuels : [`tests/checklist-v1.md`](tests/checklist-v1.md), [`tests/checklist-v1.2.md`](tests/checklist-v1.2.md), [`tests/checklist-v1.3.md`](tests/checklist-v1.3.md).
+- Checklists de tests manuels :
+  - [`tests/checklist-v1.md`](tests/checklist-v1.md) : lecteur, pages, retouche ;
+  - [`tests/checklist-v1.2.md`](tests/checklist-v1.2.md) : retouches modifiables, version définitive ;
+  - [`tests/checklist-v1.3.md`](tests/checklist-v1.3.md) : police d'origine.
 - Pour recréer les fichiers de test : `npm run creer-fixtures` (nécessite Playwright pour le scan).
 
 ## Organisation du code
 
 ```
 index.html               page de l'application
+CLAUDE.md                règles du projet (version, historique, méthode de travail)
 src/main.js              démarrage
+src/version.js           numéro de version, liste des fonctions, historique (fenêtre À propos)
 src/state.js             état partagé (document, page, zoom) + historique annuler / rétablir
 src/document.js          ouverture, modifications, enregistrement
 src/pdf/loader.js        ouverture avec PDF.js (mot de passe)
@@ -92,7 +130,7 @@ src/pdf/police-origine.js réutilisation de la police d'origine du PDF
 src/pdf/save.js          fichiers : ouvrir, enregistrer, télécharger
 src/ui/                  barre d'outils, panneaux, boîtes de dialogue, thème…
 src/styles/              apparence
-scripts/                 copie des ressources PDF.js, création des PDF de test
+scripts/                 copie des ressources PDF.js, vérification de la version, création des PDF de test
 ```
 
 Principe : **PDF.js affiche** le document ; chaque modification est faite par **pdf-lib** sur une copie
@@ -104,7 +142,7 @@ en mémoire, puis le résultat est rechargé dans PDF.js.
 | --- | --- |
 | Build | Vite (JavaScript, sans framework) |
 | Affichage, texte, recherche | pdfjs-dist (PDF.js de Mozilla) |
-| Modification des pages et du texte | pdf-lib |
+| Modification des pages et du texte | pdf-lib (+ @pdf-lib/standard-fonts pour la largeur des lettres) |
 | Archives ZIP (version 2) | fflate |
 | OCR (version 3) | tesseract.js, chargé à la demande |
 
