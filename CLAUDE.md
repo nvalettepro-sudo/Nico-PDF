@@ -20,7 +20,8 @@ Le numéro lui-même est dans `package.json` (`version`).
 4. Mettre à jour le `README.md` : ligne « Version actuelle », tableau des fonctions, limites et « Suite prévue » si besoin.
 
 `scripts/verifier-version.mjs` (lancé avant `npm run dev` et `npm run build`) bloque si la version de
-`package.json` n'est pas la première de l'historique ou si l'historique dépasse 4 versions.
+`package.json` n'est pas la première de l'historique, si l'historique dépasse 4 versions
+ou si la ligne « Version actuelle » du README n'est pas à jour.
 Il ne vérifie pas le contenu de `FONCTIONS` : c'est à faire à la main, à chaque fois.
 
 ## Méthode de travail

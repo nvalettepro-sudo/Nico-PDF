@@ -1,6 +1,7 @@
 // Vérifie avant chaque build que le numéro de version et l'historique sont cohérents.
 // Règles : la version de package.json est la première de l'historique,
-// l'historique contient au plus 4 versions, chacune avec au moins une modification.
+// l'historique contient au plus 4 versions, chacune avec au moins une modification,
+// et le README affiche la même version.
 import { readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -22,6 +23,10 @@ if (new Set(historique).size !== historique.length) {
 }
 if (/modifications: \[\s*\]/.test(source)) {
   erreurs.push('chaque version de HISTORIQUE doit lister au moins une modification.');
+}
+const readme = readFileSync(join(racine, 'README.md'), 'utf8');
+if (!readme.includes(`**Version actuelle : ${version}**`)) {
+  erreurs.push(`le README doit indiquer « **Version actuelle : ${version}** ».`);
 }
 if (erreurs.length) {
   console.error(`Vérification de la version : ${erreurs.join('\n  ')}`);
