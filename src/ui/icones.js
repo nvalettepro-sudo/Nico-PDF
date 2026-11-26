@@ -34,6 +34,7 @@ const traits = {
   texte: '<path d="M4 7V5h16v2"/><path d="M12 5v14"/><path d="M9 19h6"/>',
   attention: '<path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/><path d="M12 9v4M12 17h.01"/>',
   coche: '<path d="m5 12 5 5 9-10"/>',
+  definitif: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3v5h5v3"/><circle cx="17" cy="17" r="4"/><path d="m15.5 17 1 1 2-2"/>',
 };
 
 /** Renvoie le code SVG d'une icône. */
