@@ -29,7 +29,7 @@ export function afficherAPropos() {
       <h3>Raccourcis clavier</h3>
       <table class="raccourcis">
         <tr><td><kbd>Ctrl</kbd>+<kbd>O</kbd></td><td>Ouvrir un PDF</td></tr>
-        <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Enregistrer (<kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>S</kbd> : enregistrer sous)</td></tr>
+        <tr><td><kbd>Ctrl</kbd>+<kbd>S</kbd></td><td>Enregistrer, fichier modifiable (<kbd>Ctrl</kbd>+<kbd>Maj</kbd>+<kbd>S</kbd> : enregistrer sous)</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>F</kbd></td><td>Rechercher</td></tr>
         <tr><td><kbd>Ctrl</kbd>+<kbd>Z</kbd> / <kbd>Ctrl</kbd>+<kbd>Y</kbd></td><td>Annuler / rétablir (10 dernières modifications)</td></tr>
         <tr><td><kbd>+</kbd> / <kbd>−</kbd>, <kbd>Ctrl</kbd>+molette</td><td>Zoom</td></tr>
@@ -38,9 +38,13 @@ export function afficherAPropos() {
 
       <h3>Limites à connaître</h3>
       <ul class="limites">
-        <li><strong>Retouche du texte par recouvrement</strong> : l'ancien texte est caché sous un rectangle,
-          mais il <strong>reste dans le fichier</strong> (il peut encore être copié ou trouvé par une recherche).
-          N'utilisez pas cet outil pour masquer une information sensible : il n'y a pas de caviardage.</li>
+        <li><strong>Retouche du texte par recouvrement</strong> : dans le fichier modifiable (Ctrl+S), l'ancien texte
+          est caché sous un rectangle mais <strong>reste dans le fichier</strong> (il peut encore être copié ou trouvé par une recherche).
+          <strong>« Enregistrer en version définitive »</strong> le retire réellement et le vérifie ; s'il n'y arrive pas
+          (texte dans un bloc imbriqué, police rare), il le signale avant d'enregistrer.
+          Ce n'est pas un outil de caviardage certifié.</li>
+        <li><strong>Version définitive</strong> : elle ne se « déverrouille » pas ; gardez le fichier modifiable
+          pour pouvoir reprendre les retouches. Seules les retouches faites avec Nico PDF 1.2 ou plus récent sont reprises.</li>
         <li><strong>Polices</strong> : le nouveau texte utilise Helvetica, Times ou Courier, la police la plus proche
           de l'original. Le rendu peut légèrement différer.</li>
         <li><strong>PDF protégés par mot de passe</strong> : lecture seule.</li>
