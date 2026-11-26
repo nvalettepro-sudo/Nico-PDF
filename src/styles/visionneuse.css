@@ -289,3 +289,9 @@
   white-space: pre;
   line-height: 1.2;
 }
+
+/* Retouche déjà enregistrée dans le fichier : cadre plein, pour la distinguer du texte d'origine */
+.segment-survol.retouche-existante {
+  outline: 2px solid var(--accent);
+  background: rgb(194 65 12 / 0.1);
+}

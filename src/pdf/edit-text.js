@@ -279,7 +279,8 @@ function isolerContenuExistant(doc, page) {
  * @param {number} r.taille taille en points
  * @param {number[]} r.couleur couleur du texte (RVB 0 à 1)
  * @param {number[]} r.fond couleur du recouvrement (RVB 0 à 1)
- * @returns {Promise<string[]>} caractères qui ont dû être remplacés
+ * @returns {Promise<{ remplaces: string[], fluxRef: import('pdf-lib').PDFRef, zoneTexte: object|null }>}
+ *   caractères remplacés, flux de dessin de la retouche (pour la retrouver) et zone du nouveau texte
  */
 export async function appliquerRetouche(doc, r) {
   const page = doc.getPage(r.page - 1);
@@ -304,8 +305,11 @@ export async function appliquerRetouche(doc, r) {
   const interligne = r.taille * 1.2;
   const cos = Math.cos(r.angle);
   const sin = Math.sin(r.angle);
-  texte.split('\n').forEach((ligne, i) => {
+  const lignes = texte.split('\n');
+  let largeurMax = 0;
+  lignes.forEach((ligne, i) => {
     if (!ligne) return;
+    largeurMax = Math.max(largeurMax, police.widthOfTextAtSize(ligne, r.taille));
     page.drawText(ligne, {
       x: r.origine[0] + sin * interligne * i,
       y: r.origine[1] - cos * interligne * i,
@@ -315,5 +319,19 @@ export async function appliquerRetouche(doc, r) {
       rotate: degrees(angleDeg),
     });
   });
-  return remplaces;
+
+  // Zone occupée par le nouveau texte (repère de la ligne), pour pouvoir le retrouver au clic
+  let zoneTexte = null;
+  if (largeurMax > 0) {
+    const bas = (lignes.length - 1) * interligne + r.taille * 0.25;
+    zoneTexte = {
+      x: r.origine[0] + sin * bas,
+      y: r.origine[1] - cos * bas,
+      largeur: largeurMax,
+      hauteur: (lignes.length - 1) * interligne + r.taille * 1.2,
+      angle: r.angle,
+    };
+  }
+  // Flux de dessin créé par pdf-lib pour cette retouche (propriété interne de PDFPage)
+  return { remplaces, fluxRef: page.contentStreamRef, zoneTexte };
 }

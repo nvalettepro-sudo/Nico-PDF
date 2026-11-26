@@ -1,6 +1,12 @@
-// Panneau droit de l'outil « Retouche » : modifier un texte existant ou ajouter une zone de texte.
+// Panneau droit de l'outil « Retouche » : modifier un texte existant, ajouter une zone de texte,
+// et rouvrir une retouche déjà faite (corriger, déplacer, supprimer).
 import { etat, on } from '../state.js';
 import { appliquerModification } from '../document.js';
+import { ouvrirAvecPdfLib } from '../pdf/pages.js';
+import {
+  lireRetouches, ecrireRetouches, effacerDessinRetouche, entreeRetouche, zonesRetouche,
+} from '../pdf/retouches.js';
+import { dansZone } from '../pdf/effacer-texte.js';
 import {
   positionDansPage, pagePdfjs, viewportPage, canvasPage, divPage,
 } from '../pdf/render.js';
@@ -20,8 +26,9 @@ const CSS_POLICES = {
 let panneau;
 let visionneuse;
 let cacheSegments = new Map(); // page -> Promise<segments>
-let edition = null; // retouche en cours : { page, segment, origine, angle, recouvrement }
-let modePlacement = false;
+let edition = null; // retouche en cours : { id?, page, segment, origine, angle, recouvrement, texteOrigine }
+let modePlacement = null; // null | 'nouveau' (nouvelle zone de texte) | 'deplacer' (déplacer le texte en cours)
+let retouchesDoc = { octets: null, promesse: Promise.resolve([]) }; // retouches mémorisées dans le fichier
 let survol = null;
 let avertissementMontre = false;
 
@@ -36,6 +43,7 @@ export function initRetouche(element) {
   on('document', () => {
     cacheSegments = new Map();
     if (edition) annulerEdition();
+    if (etat.outil === 'retouche') majCompteRetouches();
   });
   on('page-rendue', (n) => {
     if (edition?.page === n) majApercu();
@@ -47,7 +55,7 @@ export function initRetouche(element) {
   visionneuse.addEventListener('click', surClic);
   document.addEventListener('keydown', (e) => {
     if (etat.outil !== 'retouche' || e.key !== 'Escape' || document.querySelector('dialog[open]')) return;
-    if (modePlacement) basculerPlacement(false);
+    if (modePlacement) basculerPlacement(null);
     else if (edition) annulerEdition();
   });
 }
@@ -61,10 +69,11 @@ function ouvrirPanneau() {
       <h2>Retouche du texte</h2>
       <div class="avertissement" data-icone="attention">
         <div><strong>Retouche par recouvrement.</strong> Le texte d'origine est caché sous un rectangle
-        mais <strong>reste dans le fichier</strong> : il peut encore être copié ou trouvé par une recherche.
-        Ne l'utilisez pas pour masquer une information sensible.</div>
+        mais <strong>reste dans le fichier modifiable</strong> : il peut encore être copié ou trouvé par une recherche.
+        Pour le retirer réellement, utilisez <strong>« Enregistrer en version définitive »</strong>.</div>
       </div>
       <p class="consigne" id="consigne-retouche">Cliquez sur un texte de la page pour le modifier.</p>
+      <p class="consigne" id="compte-retouches"></p>
       <button class="btn" id="btn-placer-texte" data-icone="texte"><span>Ajouter une zone de texte</span></button>
       <form id="formulaire-retouche" hidden>
         <p class="original" id="texte-original"></p>
@@ -95,6 +104,10 @@ function ouvrirPanneau() {
             <input name="fond" type="color" />
           </label>
         </div>
+        <div class="actions secondaires">
+          <button type="button" class="btn" id="btn-deplacer-texte" title="Cliquez ensuite sur la page à l'endroit voulu">Déplacer le texte</button>
+          <button type="button" class="btn danger" id="btn-supprimer-retouche" hidden>Supprimer la retouche</button>
+        </div>
         <div class="actions">
           <button type="button" class="btn" id="btn-annuler-retouche">Annuler</button>
           <button type="submit" class="btn principal">Appliquer</button>
@@ -102,7 +115,9 @@ function ouvrirPanneau() {
       </form>
     </div>`;
   placerIcones(panneau);
-  panneau.querySelector('#btn-placer-texte').addEventListener('click', () => basculerPlacement(!modePlacement));
+  panneau.querySelector('#btn-placer-texte').addEventListener('click', () => basculerPlacement(modePlacement === 'nouveau' ? null : 'nouveau'));
+  panneau.querySelector('#btn-deplacer-texte').addEventListener('click', () => basculerPlacement(modePlacement === 'deplacer' ? null : 'deplacer'));
+  panneau.querySelector('#btn-supprimer-retouche').addEventListener('click', supprimerRetouche);
   const formulaire = panneau.querySelector('#formulaire-retouche');
   formulaire.addEventListener('input', majApercu);
   formulaire.addEventListener('submit', (e) => {
@@ -110,6 +125,7 @@ function ouvrirPanneau() {
     appliquer();
   });
   panneau.querySelector('#btn-annuler-retouche').addEventListener('click', annulerEdition);
+  majCompteRetouches();
   if (!avertissementMontre) {
     avertissementMontre = true;
     notifier('Retouche : l\'ancien texte reste présent dans le fichier, sous le recouvrement.', 'attention', 6000);
@@ -118,23 +134,56 @@ function ouvrirPanneau() {
 
 function fermerPanneau() {
   annulerEdition();
-  basculerPlacement(false);
+  basculerPlacement(null);
   effacerSurvol();
   panneau.hidden = true;
   panneau.replaceChildren();
 }
 
-function basculerPlacement(actif) {
-  modePlacement = actif;
-  visionneuse.classList.toggle('placer-texte', actif);
-  const bouton = panneau.querySelector('#btn-placer-texte');
-  bouton?.classList.toggle('actif', actif);
+function basculerPlacement(mode) {
+  modePlacement = mode;
+  visionneuse.classList.toggle('placer-texte', Boolean(mode));
+  panneau.querySelector('#btn-placer-texte')?.classList.toggle('actif', mode === 'nouveau');
+  panneau.querySelector('#btn-deplacer-texte')?.classList.toggle('actif', mode === 'deplacer');
   const consigne = panneau.querySelector('#consigne-retouche');
   if (consigne) {
-    consigne.textContent = actif
-      ? 'Cliquez sur la page à l\'endroit où commencer le nouveau texte (Échap pour annuler).'
-      : 'Cliquez sur un texte de la page pour le modifier.';
+    consigne.textContent = {
+      nouveau: 'Cliquez sur la page à l\'endroit où commencer le nouveau texte (Échap pour annuler).',
+      deplacer: 'Cliquez sur la page à l\'endroit où placer le début du texte (Échap pour annuler).',
+    }[mode] ?? 'Cliquez sur un texte de la page pour le modifier, ou sur une retouche pour la reprendre.';
   }
+}
+
+// ---------- Retouches mémorisées dans le fichier ----------
+
+/** Retouches du document ouvert (lues une fois par version du fichier). */
+function retouchesDuDocument() {
+  if (retouchesDoc.octets !== etat.octets) {
+    retouchesDoc = {
+      octets: etat.octets,
+      promesse: etat.octets ? ouvrirAvecPdfLib(etat.octets).then(lireRetouches).catch(() => []) : Promise.resolve([]),
+    };
+  }
+  return retouchesDoc.promesse;
+}
+
+/** Retouche (la plus récente) sous un point de la page n. */
+async function retoucheSousLePoint(n, px, py) {
+  const liste = await retouchesDuDocument();
+  for (let i = liste.length - 1; i >= 0; i--) {
+    const r = liste[i];
+    if (r.page === n && zonesRetouche(r).some((z) => dansZone(z, px, py))) return r;
+  }
+  return null;
+}
+
+async function majCompteRetouches() {
+  const liste = await retouchesDuDocument();
+  const zone = panneau.querySelector('#compte-retouches');
+  if (!zone) return;
+  zone.textContent = liste.length
+    ? `${liste.length} retouche${liste.length > 1 ? 's modifiables' : ' modifiable'} dans ce document (cadre orange au survol).`
+    : '';
 }
 
 // ---------- Survol et clic sur la page ----------
@@ -148,15 +197,19 @@ async function surSurvol(e) {
   if (etat.outil !== 'retouche' || modePlacement) return;
   const pos = positionDansPage(e);
   if (!pos) return effacerSurvol();
-  const segment = segmentSousLePoint(await segmentsPage(pos.n), pos.px, pos.py);
-  if (segment === survol?.segment) return;
+  // Une retouche existante passe avant le texte d'origine
+  const retouche = await retoucheSousLePoint(pos.n, pos.px, pos.py);
+  const cible = retouche ?? segmentSousLePoint(await segmentsPage(pos.n), pos.px, pos.py);
+  if (cible && cible === survol?.cible) return;
   effacerSurvol();
-  if (!segment || (edition?.segment === segment)) return;
+  if (!cible || (retouche && edition?.id === retouche.id) || (!retouche && edition?.segment === cible)) return;
   const cadre = document.createElement('div');
-  cadre.className = 'segment-survol';
-  placerSurEcran(cadre, pos.n, coinsZone(zoneDeRecouvrement(segment)));
+  cadre.className = retouche ? 'segment-survol retouche-existante' : 'segment-survol';
+  const zones = retouche ? zonesRetouche(retouche) : [zoneDeRecouvrement(cible)];
+  placerSurEcran(cadre, pos.n, zones.flatMap(coinsZone));
+  if (retouche) cadre.title = 'Retouche : cliquez pour la corriger, la déplacer ou la supprimer';
   pos.div.querySelector('.calque-outil').append(cadre);
-  survol = { segment, cadre };
+  survol = { cible, cadre };
 }
 
 function effacerSurvol() {
@@ -168,9 +221,25 @@ async function surClic(e) {
   if (etat.outil !== 'retouche') return;
   const pos = positionDansPage(e);
   if (!pos) return;
-  if (modePlacement) {
-    basculerPlacement(false);
+  if (modePlacement === 'nouveau') {
+    basculerPlacement(null);
     commencerNouveauTexte(pos);
+    return;
+  }
+  if (modePlacement === 'deplacer') {
+    basculerPlacement(null);
+    if (edition && pos.n === edition.page) {
+      edition.origine = [pos.px, pos.py];
+      majApercu();
+    } else if (edition) {
+      notifier('Le texte ne peut être déplacé que sur sa propre page.', 'attention');
+    }
+    return;
+  }
+  const retouche = await retoucheSousLePoint(pos.n, pos.px, pos.py);
+  if (retouche) {
+    effacerSurvol();
+    reprendreRetouche(retouche);
     return;
   }
   const segment = segmentSousLePoint(await segmentsPage(pos.n), pos.px, pos.py);
@@ -199,6 +268,7 @@ function commencerRetouche(n, segment) {
     origine: segment.origine,
     angle: segment.angle,
     recouvrement,
+    texteOrigine: segment.texte,
   };
   remplirFormulaire({
     texte: segment.texte,
@@ -209,6 +279,29 @@ function commencerRetouche(n, segment) {
     couleur: couleurs.texte,
     fond: couleurs.fond,
     original: `Texte d'origine : « ${segment.texte} » — police ${police.nomOrigine}`,
+  });
+}
+
+/** Rouvre une retouche mémorisée dans le fichier, avec ses réglages. */
+function reprendreRetouche(r) {
+  edition = {
+    id: r.id,
+    page: r.page,
+    segment: null,
+    origine: r.origine,
+    angle: r.angle,
+    recouvrement: r.recouvrement,
+    texteOrigine: r.texteOrigine,
+  };
+  remplirFormulaire({
+    texte: r.texte,
+    famille: r.famille,
+    gras: r.gras,
+    italique: r.italique,
+    taille: r.taille,
+    couleur: r.couleur,
+    fond: r.fond,
+    original: r.texteOrigine ? `Retouche existante — texte d'origine : « ${r.texteOrigine} »` : 'Zone de texte existante',
   });
 }
 
@@ -247,6 +340,7 @@ function remplirFormulaire(v) {
   f.couleur.value = versHex(v.couleur);
   f.fond.value = versHex(v.fond);
   panneau.querySelector('#champ-fond').hidden = !edition.recouvrement;
+  panneau.querySelector('#btn-supprimer-retouche').hidden = !edition.id;
   panneau.querySelector('#texte-original').textContent = v.original;
   majApercu();
   f.texte.focus();
@@ -268,6 +362,7 @@ function lireFormulaire() {
 
 function annulerEdition() {
   edition = null;
+  if (modePlacement === 'deplacer') basculerPlacement(null);
   document.querySelectorAll('.apercu-retouche').forEach((el) => el.remove());
   const f = panneau?.querySelector('#formulaire-retouche');
   if (f) f.hidden = true;
@@ -280,19 +375,57 @@ async function appliquer() {
     notifier('Saisissez un texte à ajouter.', 'attention');
     return;
   }
-  const { page, origine, angle, recouvrement } = edition;
+  const {
+    id, page, origine, angle, recouvrement, texteOrigine,
+  } = edition;
   let remplaces = [];
   const ok = await appliquerModification(async (doc) => {
-    remplaces = await appliquerRetouche(doc, {
+    const liste = lireRetouches(doc);
+    // Retouche existante : on retire l'ancien dessin au lieu d'empiler un nouveau recouvrement
+    const ancienne = id ? liste.find((r) => r.id === id) : null;
+    if (ancienne) {
+      effacerDessinRetouche(doc, ancienne);
+      liste.splice(liste.indexOf(ancienne), 1);
+    }
+    if (!v.texte.trim() && !recouvrement) return false;
+    const resultat = await appliquerRetouche(doc, {
       page, origine, angle, recouvrement, ...v,
     });
-  }, { message: recouvrement ? 'Texte retouché.' : 'Zone de texte ajoutée.' });
+    remplaces = resultat.remplaces;
+    liste.push(entreeRetouche({
+      id: ancienne?.id,
+      page: doc.getPage(page - 1),
+      fluxRef: resultat.fluxRef,
+      zoneTexte: resultat.zoneTexte,
+      parametres: {
+        recouvrement, origine, angle, texteOrigine, ...v,
+      },
+    }));
+    ecrireRetouches(doc, liste);
+    return true;
+  }, { message: id ? 'Retouche modifiée.' : (recouvrement ? 'Texte retouché.' : 'Zone de texte ajoutée.') });
   if (ok) {
     annulerEdition();
     if (remplaces.length) {
       notifier(`Caractères absents de la police remplacés par « ? » : ${remplaces.join(' ')}`, 'attention', 7000);
     }
   }
+}
+
+/** Supprime la retouche en cours : le texte d'origine réapparaît. */
+async function supprimerRetouche() {
+  if (!edition?.id) return;
+  const { id } = edition;
+  const ok = await appliquerModification((doc) => {
+    const liste = lireRetouches(doc);
+    const r = liste.find((x) => x.id === id);
+    if (!r) return false;
+    effacerDessinRetouche(doc, r);
+    liste.splice(liste.indexOf(r), 1);
+    ecrireRetouches(doc, liste);
+    return true;
+  }, { message: 'Retouche supprimée : le texte d\'origine est de nouveau visible.' });
+  if (ok) annulerEdition();
 }
 
 // ---------- Aperçu sur la page ----------
