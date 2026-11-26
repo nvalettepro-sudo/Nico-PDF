@@ -886,3 +886,15 @@ body.lecture-seule [data-modif] {
   justify-content: flex-start;
   flex-wrap: wrap;
 }
+
+.retouche .alerte-police {
+  margin: 0;
+  padding: 8px 10px;
+  border-radius: 6px;
+  background: var(--attention-doux);
+  font-size: 13px;
+}
+
+.retouche .styles input:disabled + span {
+  opacity: 0.4;
+}

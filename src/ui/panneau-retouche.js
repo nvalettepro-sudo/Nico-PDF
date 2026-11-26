@@ -4,9 +4,10 @@ import { etat, on } from '../state.js';
 import { appliquerModification } from '../document.js';
 import { ouvrirAvecPdfLib } from '../pdf/pages.js';
 import {
-  lireRetouches, ecrireRetouches, effacerDessinRetouche, entreeRetouche, zonesRetouche,
+  lireRetouches, ecrireRetouches, effacerDessinRetouche, entreeRetouche, zonesRetouche, fluxDesRetouches,
 } from '../pdf/retouches.js';
-import { dansZone } from '../pdf/effacer-texte.js';
+import { dansZone, policesSousZone } from '../pdf/effacer-texte.js';
+import { encodeurPolice } from '../pdf/police-origine.js';
 import {
   positionDansPage, pagePdfjs, viewportPage, canvasPage, divPage,
 } from '../pdf/render.js';
@@ -28,7 +29,7 @@ let visionneuse;
 let cacheSegments = new Map(); // page -> Promise<segments>
 let edition = null; // retouche en cours : { id?, page, segment, origine, angle, recouvrement, texteOrigine }
 let modePlacement = null; // null | 'nouveau' (nouvelle zone de texte) | 'deplacer' (déplacer le texte en cours)
-let retouchesDoc = { octets: null, promesse: Promise.resolve([]) }; // retouches mémorisées dans le fichier
+let docLu = { octets: null, promesse: Promise.resolve(null) }; // document lu par pdf-lib (lecture seule)
 let survol = null;
 let avertissementMontre = false;
 
@@ -83,6 +84,7 @@ function ouvrirPanneau() {
         <div class="ligne">
           <label class="champ">Police
             <select name="famille">
+              <option value="Origine" hidden>Police d'origine</option>
               <option value="Helvetica">Helvetica (Arial)</option>
               <option value="Times">Times</option>
               <option value="Courier">Courier</option>
@@ -104,6 +106,7 @@ function ouvrirPanneau() {
             <input name="fond" type="color" />
           </label>
         </div>
+        <p class="alerte-police" id="alerte-police" hidden></p>
         <div class="actions secondaires">
           <button type="button" class="btn" id="btn-deplacer-texte" title="Cliquez ensuite sur la page à l'endroit voulu">Déplacer le texte</button>
           <button type="button" class="btn danger" id="btn-supprimer-retouche" hidden>Supprimer la retouche</button>
@@ -119,7 +122,10 @@ function ouvrirPanneau() {
   panneau.querySelector('#btn-deplacer-texte').addEventListener('click', () => basculerPlacement(modePlacement === 'deplacer' ? null : 'deplacer'));
   panneau.querySelector('#btn-supprimer-retouche').addEventListener('click', supprimerRetouche);
   const formulaire = panneau.querySelector('#formulaire-retouche');
-  formulaire.addEventListener('input', majApercu);
+  formulaire.addEventListener('input', () => {
+    verifierPoliceOrigine();
+    majApercu();
+  });
   formulaire.addEventListener('submit', (e) => {
     e.preventDefault();
     appliquer();
@@ -156,15 +162,50 @@ function basculerPlacement(mode) {
 
 // ---------- Retouches mémorisées dans le fichier ----------
 
-/** Retouches du document ouvert (lues une fois par version du fichier). */
-function retouchesDuDocument() {
-  if (retouchesDoc.octets !== etat.octets) {
-    retouchesDoc = {
+/** Document ouvert, lu par pdf-lib une fois par version du fichier (lecture seule, jamais enregistré). */
+function documentLu() {
+  if (docLu.octets !== etat.octets) {
+    docLu = {
       octets: etat.octets,
-      promesse: etat.octets ? ouvrirAvecPdfLib(etat.octets).then(lireRetouches).catch(() => []) : Promise.resolve([]),
+      promesse: etat.octets ? ouvrirAvecPdfLib(etat.octets).catch(() => null) : Promise.resolve(null),
     };
   }
-  return retouchesDoc.promesse;
+  return docLu.promesse;
+}
+
+/** Retouches mémorisées dans le fichier ouvert. */
+async function retouchesDuDocument() {
+  const doc = await documentLu();
+  return doc ? lireRetouches(doc) : [];
+}
+
+/**
+ * Analyse la police réellement utilisée sous une zone de la page n.
+ * @returns {Promise<{ nomBase: string, origine: object|null, encodeur: object|null }>}
+ */
+async function analyserPolice(n, zone) {
+  try {
+    const doc = await documentLu();
+    if (!doc) return { nomBase: '', origine: null, encodeur: null };
+    const polices = policesSousZone(doc, doc.getPage(n - 1), zone, fluxDesRetouches(lireRetouches(doc)));
+    const principale = polices[0];
+    if (!principale) return { nomBase: '', origine: null, encodeur: null };
+    const encodeur = principale.ref ? encodeurPolice(doc.context, principale.ref) : null;
+    return {
+      nomBase: principale.nomBase,
+      origine: encodeur ? { ref: principale.ref, th: principale.th, nom: encodeur.nom } : null,
+      encodeur,
+    };
+  } catch (erreur) {
+    console.warn('Analyse de la police impossible', erreur);
+    return { nomBase: '', origine: null, encodeur: null };
+  }
+}
+
+/** Encodeur de la police d'origine d'une retouche mémorisée. */
+async function encodeurDeRetouche(policeOrigine) {
+  const doc = await documentLu();
+  return doc && policeOrigine ? encodeurPolice(doc.context, policeOrigine.ref) : null;
 }
 
 /** Retouche (la plus récente) sous un point de la page n. */
@@ -252,9 +293,10 @@ async function surClic(e) {
 }
 
 /** Prépare la retouche d'un texte existant : police, taille et couleurs d'origine. */
-function commencerRetouche(n, segment) {
+async function commencerRetouche(n, segment) {
   const recouvrement = zoneDeRecouvrement(segment);
-  const police = devinerPolice(pagePdfjs(n), segment);
+  const analyse = await analyserPolice(n, recouvrement);
+  const police = devinerPolice(pagePdfjs(n), segment, analyse.nomBase);
   let couleurs = { fond: [1, 1, 1], texte: [0, 0, 0] };
   const canvas = canvasPage(n);
   const div = divPage(n);
@@ -269,10 +311,13 @@ function commencerRetouche(n, segment) {
     angle: segment.angle,
     recouvrement,
     texteOrigine: segment.texte,
+    policeOrigine: analyse.origine,
+    encodeur: analyse.encodeur,
+    familleProche: police.famille,
   };
   remplirFormulaire({
     texte: segment.texte,
-    famille: police.famille,
+    famille: analyse.origine ? 'Origine' : police.famille,
     gras: police.gras,
     italique: police.italique,
     taille: Math.round(segment.taille * 10) / 10,
@@ -283,7 +328,7 @@ function commencerRetouche(n, segment) {
 }
 
 /** Rouvre une retouche mémorisée dans le fichier, avec ses réglages. */
-function reprendreRetouche(r) {
+async function reprendreRetouche(r) {
   edition = {
     id: r.id,
     page: r.page,
@@ -292,6 +337,9 @@ function reprendreRetouche(r) {
     angle: r.angle,
     recouvrement: r.recouvrement,
     texteOrigine: r.texteOrigine,
+    policeOrigine: r.policeOrigine ?? null,
+    encodeur: await encodeurDeRetouche(r.policeOrigine),
+    familleProche: r.familleProche ?? 'Helvetica',
   };
   remplirFormulaire({
     texte: r.texte,
@@ -315,6 +363,9 @@ function commencerNouveauTexte(pos) {
     // Texte droit à l'écran, même si la page est tournée dans le fichier
     angle: (rotationPage * Math.PI) / 180,
     recouvrement: null,
+    policeOrigine: null,
+    encodeur: null,
+    familleProche: 'Helvetica',
   };
   remplirFormulaire({
     texte: '',
@@ -333,7 +384,11 @@ function remplirFormulaire(v) {
   if (!f) return;
   f.hidden = false;
   f.texte.value = v.texte;
-  f.famille.value = v.famille;
+  const optionOrigine = f.famille.querySelector('option[value="Origine"]');
+  optionOrigine.hidden = !edition.policeOrigine;
+  optionOrigine.textContent = edition.policeOrigine
+    ? `Police d'origine : ${edition.policeOrigine.nom} (identique)` : 'Police d\'origine';
+  f.famille.value = v.famille === 'Origine' && !edition.policeOrigine ? edition.familleProche : v.famille;
   f.gras.checked = v.gras;
   f.italique.checked = v.italique;
   f.taille.value = String(v.taille);
@@ -342,9 +397,32 @@ function remplirFormulaire(v) {
   panneau.querySelector('#champ-fond').hidden = !edition.recouvrement;
   panneau.querySelector('#btn-supprimer-retouche').hidden = !edition.id;
   panneau.querySelector('#texte-original').textContent = v.original;
+  verifierPoliceOrigine();
   majApercu();
   f.texte.focus();
   f.texte.select();
+}
+
+/** Vérifie que les lettres tapées existent dans la police d'origine ; met à jour le message. */
+function verifierPoliceOrigine() {
+  const f = panneau.querySelector('#formulaire-retouche');
+  const alerte = panneau.querySelector('#alerte-police');
+  if (!f || !alerte) return true;
+  const origine = f.famille.value === 'Origine';
+  f.gras.disabled = origine;
+  f.italique.disabled = origine;
+  f.gras.closest('.styles').title = origine ? 'Gras et italique : ceux de la police d\'origine' : '';
+  if (!origine || !edition?.encodeur) {
+    alerte.hidden = true;
+    return true;
+  }
+  const manquants = [...new Set(f.texte.value.split('\n').flatMap((l) => edition.encodeur.encoder(l).manquants))];
+  alerte.hidden = !manquants.length;
+  alerte.textContent = manquants.length
+    ? `Lettres absentes de la police d'origine (le PDF n'intègre que les lettres déjà utilisées) : ${manquants.join(' ')}. `
+      + `Modifiez le texte ou choisissez une police proche (suggestion : ${edition.familleProche}).`
+    : '';
+  return !manquants.length;
 }
 
 function lireFormulaire() {
@@ -375,9 +453,14 @@ async function appliquer() {
     notifier('Saisissez un texte à ajouter.', 'attention');
     return;
   }
+  if (!verifierPoliceOrigine()) {
+    notifier('Certaines lettres n\'existent pas dans la police d\'origine : choisissez une police proche.', 'attention');
+    return;
+  }
   const {
-    id, page, origine, angle, recouvrement, texteOrigine,
+    id, page, origine, angle, recouvrement, texteOrigine, familleProche,
   } = edition;
+  const policeOrigine = v.famille === 'Origine' ? edition.policeOrigine : null;
   let remplaces = [];
   const ok = await appliquerModification(async (doc) => {
     const liste = lireRetouches(doc);
@@ -389,7 +472,7 @@ async function appliquer() {
     }
     if (!v.texte.trim() && !recouvrement) return false;
     const resultat = await appliquerRetouche(doc, {
-      page, origine, angle, recouvrement, ...v,
+      page, origine, angle, recouvrement, policeOrigine, ...v,
     });
     remplaces = resultat.remplaces;
     liste.push(entreeRetouche({
@@ -398,7 +481,7 @@ async function appliquer() {
       fluxRef: resultat.fluxRef,
       zoneTexte: resultat.zoneTexte,
       parametres: {
-        recouvrement, origine, angle, texteOrigine, ...v,
+        recouvrement, origine, angle, texteOrigine, policeOrigine, familleProche, ...v,
       },
     }));
     ecrireRetouches(doc, liste);
@@ -471,7 +554,7 @@ function majApercu() {
     texte.className = 'texte';
     texte.textContent = v.texte;
     Object.assign(texte.style, {
-      fontFamily: CSS_POLICES[v.famille],
+      fontFamily: CSS_POLICES[v.famille === 'Origine' ? edition.familleProche : v.famille],
       fontSize: `${v.taille * zoom}px`,
       fontWeight: v.gras ? '700' : '400',
       fontStyle: v.italique ? 'italic' : 'normal',
