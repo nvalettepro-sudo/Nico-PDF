@@ -3,7 +3,7 @@ import {
   etat, on, emit, peutAnnuler, peutRetablir,
 } from '../state.js';
 import {
-  ouvrir, enregistrer, enregistrerSous, annuler, retablir,
+  ouvrir, enregistrer, enregistrerSous, enregistrerDefinitif, annuler, retablir,
 } from '../document.js';
 import {
   allerPage, zoomer, definirZoom, definirModeZoom, tournerVue, definirModeAffichage,
@@ -19,6 +19,7 @@ export function initBarreOutils() {
   $('btn-ouvrir-accueil').addEventListener('click', () => ouvrir());
   $('btn-enregistrer').addEventListener('click', enregistrer);
   $('btn-enregistrer-sous').addEventListener('click', enregistrerSous);
+  $('btn-definitif').addEventListener('click', enregistrerDefinitif);
   $('btn-annuler').addEventListener('click', annuler);
   $('btn-retablir').addEventListener('click', retablir);
 

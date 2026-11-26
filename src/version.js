@@ -48,14 +48,17 @@ export const FONCTIONS = [
     elements: [
       'Modifier un texte existant (par recouvrement)',
       'Ajouter une zone de texte',
-      'Police, taille, gras, italique et couleur réglables',
+      'Police d\'origine du PDF réutilisée à l\'identique, avec contrôle des lettres disponibles',
+      'Sinon, police standard la plus proche (d\'après le vrai nom de la police), taille, gras, italique et couleur réglables',
+      'Reprendre une retouche plus tard : la corriger, la déplacer ou la supprimer',
     ],
   },
   {
     theme: 'Fichier',
     elements: [
-      'Enregistrer sur le fichier d\'origine (Chrome, Edge) ou télécharger',
+      'Enregistrer (modifiable) : sur le fichier d\'origine (Chrome, Edge) ou téléchargement ; les retouches restent modifiables',
       'Enregistrer sous',
+      'Enregistrer en version définitive : retouches figées et ancien texte réellement retiré (texte toujours sélectionnable)',
       'Annuler / rétablir les 10 dernières modifications (Ctrl+Z, Ctrl+Y)',
     ],
   },
@@ -63,6 +66,24 @@ export const FONCTIONS = [
 
 /** Les 4 dernières versions, de la plus récente à la plus ancienne. */
 export const HISTORIQUE = [
+  {
+    version: '1.3.0',
+    date: '2026-11-26',
+    modifications: [
+      'Retouche : le nouveau texte est écrit avec la police d\'origine du PDF (même dessin des lettres), proposée par défaut',
+      'Contrôle des lettres disponibles dans la police intégrée, avec message si une lettre manque',
+      'Police proche mieux choisie, d\'après le vrai nom de la police lu dans le fichier',
+    ],
+  },
+  {
+    version: '1.2.0',
+    date: '2026-11-26',
+    modifications: [
+      'Enregistrement modifiable : les retouches sont mémorisées dans le fichier et peuvent être reprises plus tard (corriger, déplacer, supprimer)',
+      'Nouveau bouton « Enregistrer en version définitive » : retouches figées, ancien texte réellement retiré, avec vérification automatique',
+      'Téléchargement : le nom du fichier est conservé même s\'il contient des accents (accents retirés)',
+    ],
+  },
   {
     version: '1.1.0',
     date: '2026-11-14',
@@ -75,24 +96,6 @@ export const HISTORIQUE = [
     date: '2026-11-14',
     modifications: [
       'Notifications : pastille de couleur à la place de la bordure latérale',
-    ],
-  },
-  {
-    version: '1.0.0',
-    date: '2026-11-14',
-    modifications: [
-      'Lecteur complet : affichage, miniatures, signets, zoom, modes, recherche, thème sombre',
-      'Copie du texte et capture de zone',
-      'Organisation des pages : réordonner, supprimer, pivoter, insérer, extraire, remplacer',
-      'Retouche du texte par recouvrement et ajout de zones de texte',
-      'Enregistrer, enregistrer sous, annuler / rétablir',
-    ],
-  },
-  {
-    version: '0.1.0',
-    date: '2026-11-14',
-    modifications: [
-      'Socle technique : Vite, PDF.js, pdf-lib, déploiement GitHub Pages',
     ],
   },
 ];

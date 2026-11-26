@@ -7,11 +7,13 @@ import {
 import { chargerPdf } from './pdf/loader.js';
 import { afficherDocument, viderVisionneuse } from './pdf/render.js';
 import { ouvrirAvecPdfLib } from './pdf/pages.js';
+import { lireRetouches } from './pdf/retouches.js';
+import { creerVersionDefinitive } from './pdf/definitif.js';
 import {
-  choisirPdf, ecrireSurFichier, enregistrerSous as demanderEmplacement, telecharger, estAnnulation,
+  choisirPdf, ecrireSurFichier, enregistrerSous as demanderEmplacement, telecharger, estAnnulation, nomAvecSuffixe,
 } from './pdf/save.js';
 import {
-  demanderMotDePasse, notifier, signalerErreur, confirmer, informer,
+  demanderMotDePasse, notifier, signalerErreur, confirmer, informer, ouvrirDialogue, echapper,
 } from './ui/dialogues.js';
 
 let operationEnCours = false;
@@ -172,6 +174,62 @@ export async function enregistrerSous() {
     emit('modifie');
   } catch (erreur) {
     signalerErreur(erreur, 'Enregistrement impossible');
+  }
+}
+
+/**
+ * Enregistrer en version définitive : les retouches sont figées et l'ancien texte
+ * caché sous les recouvrements est réellement retiré. Le document ouvert (modifiable) ne change pas.
+ */
+export async function enregistrerDefinitif() {
+  if (!etat.pdf) return;
+  if (etat.lectureSeule) {
+    await informer('Lecture seule', 'Ce PDF est protégé : il ne peut pas être modifié.');
+    return;
+  }
+  try {
+    const nbRetouches = lireRetouches(await ouvrirAvecPdfLib(etat.octets)).length;
+    if (!nbRetouches) {
+      await informer('Aucune retouche à figer',
+        'Ce document ne contient pas de retouche faite avec Nico PDF (version 1.2 ou plus récente). '
+        + 'La version définitive sert à figer les retouches et à retirer l\'ancien texte. '
+        + 'Pour une simple copie, utilisez « Enregistrer sous ».');
+      return;
+    }
+    if (!(await confirmer('Enregistrer en version définitive',
+      `Le fichier définitif ne contiendra plus l'ancien texte caché sous ${nbRetouches > 1 ? `les ${nbRetouches} retouches` : 'la retouche'}. `
+      + 'Les retouches ne pourront plus être modifiées dans ce fichier.<br><br>'
+      + 'Votre fichier modifiable actuel est conservé tel quel.',
+      { libelle: 'Créer la version définitive' }))) return;
+
+    document.body.classList.add('chargement');
+    const resultat = await creerVersionDefinitive(etat.octets);
+    document.body.classList.remove('chargement');
+
+    if (resultat.restes.length) {
+      const details = resultat.restes
+        .map((r) => `<li>page ${r.page} : « ${echapper(r.texte.slice(0, 80))} »</li>`).join('');
+      const raisons = resultat.explications.length
+        ? `<p class="discret">Cause probable : ${echapper(resultat.explications.join(' ; '))}.</p>` : '';
+      const { valeur } = await ouvrirDialogue({
+        titre: 'Ancien texte encore présent',
+        contenu: `<p class="alerte">Une partie du texte d'origine n'a pas pu être retirée :</p><ul>${details}</ul>${raisons}
+          <p>Ce texte reste caché sous le recouvrement, mais il peut encore être copié ou trouvé par une recherche.</p>`,
+        boutons: [
+          { libelle: 'Annuler', valeur: false },
+          { libelle: 'Enregistrer quand même', valeur: true, principal: true, danger: true },
+        ],
+      });
+      if (!valeur) return;
+    }
+    await enregistrerCopie(resultat.octets, nomAvecSuffixe(etat.nomFichier, 'définitif'));
+    if (!resultat.restes.length) {
+      notifier(`Version définitive : ${resultat.nbRetouches} retouche${resultat.nbRetouches > 1 ? 's figées' : ' figée'}, ancien texte retiré et vérifié.`, 'succes', 6000);
+    }
+  } catch (erreur) {
+    signalerErreur(erreur, 'Version définitive impossible');
+  } finally {
+    document.body.classList.remove('chargement');
   }
 }
 
