@@ -8,13 +8,17 @@ import { pdfjsLib } from './pdf/loader.js';
 import {
   lireAnnotationsPage, texteSousRects, creerAnnotation, supprimerAnnotation, modifierAnnotation,
 } from './pdf/annotations.js';
-import { appliquerRetouche, supprimerRetouche, lireRegistrePdfjs } from './pdf/edit-text.js';
+import { appliquerRetouche, coinsZone } from './pdf/edit-text.js';
+import {
+  lireRetouches, ecrireRetouches, effacerDessinRetouche, entreeRetouche, zonesRetouche,
+} from './pdf/retouches.js';
+import { ouvrirAvecPdfLib } from './pdf/pages.js';
 import { notifier, signalerErreur } from './ui/dialogues.js';
 
 /** Contenu actuel du document. */
 export const inventaire = {
   annotations: [], // voir lireAnnotationsPage
-  retouches: [], // voir appliquerRetouche (registre « NicoRetouches »)
+  retouches: [], // retouches mémorisées dans le fichier (voir pdf/retouches.js)
   pret: false,
 };
 
@@ -73,21 +77,32 @@ async function relire() {
   }
   if (gen !== generation) return;
 
-  // Retouches de texte (registre du fichier) ; la page a pu changer de numéro depuis
+  // Retouches de texte mémorisées dans le fichier (lues avec pdf-lib)
   const retouches = [];
-  for (const r of await lireRegistrePdfjs(pdf)) {
-    const [num, genRef] = String(r.pageRef).split(' ').map(Number);
-    let page = null;
-    try {
-      page = (await pdf.getPageIndex({ num, gen: genRef || 0 })) + 1;
-    } catch {
-      page = null; // page supprimée
-    }
-    if (page && Array.isArray(r.cadre)) {
+  try {
+    const doc = await ouvrirAvecPdfLib(etat.octets);
+    for (const r of lireRetouches(doc)) {
+      const points = zonesRetouche(r).flatMap((z) => coinsZone(z));
+      if (!points.length) continue;
+      const cadre = [
+        Math.min(...points.map((pt) => pt[0])), Math.min(...points.map((pt) => pt[1])),
+        Math.max(...points.map((pt) => pt[0])), Math.max(...points.map((pt) => pt[1])),
+      ];
       retouches.push({
-        ...r, page, pageRef: { num, gen: genRef || 0 }, rects: [r.cadre], couleur: r.reglages?.couleur ?? [0, 0, 0],
+        brut: r,
+        id: r.id,
+        page: r.page,
+        pageRef: { num: r.pageRef[0], gen: r.pageRef[1] },
+        texte: r.texte ?? '',
+        texteOrigine: r.texteOrigine ?? '',
+        couleur: r.couleur ?? [0, 0, 0],
+        fond: r.fond ?? [1, 1, 1],
+        cadre,
+        rects: [cadre],
       });
     }
+  } catch {
+    // PDF protégé ou illisible par pdf-lib : pas de retouche à lister
   }
   if (gen !== generation) return;
 
@@ -169,19 +184,23 @@ export async function supprimerUneAnnotation(a) {
 
 /** Retire une retouche de texte (le texte d'origine réapparaît) et la place dans la corbeille. */
 export async function supprimerUneRetouche(r) {
-  let retiree = true;
   const ok = await appliquerModification((doc) => {
-    retiree = supprimerRetouche(doc, r.id);
+    const liste = lireRetouches(doc);
+    const trouvee = liste.find((x) => x.id === r.id);
+    if (!trouvee) throw new Error('Cette retouche est introuvable dans le fichier.');
+    effacerDessinRetouche(doc, trouvee);
+    liste.splice(liste.indexOf(trouvee), 1);
+    ecrireRetouches(doc, liste);
+  }, {
+    message: r.texteOrigine
+      ? 'Retouche retirée : le texte d\'origine est revenu (récupérable dans la corbeille).'
+      : 'Texte ajouté retiré (récupérable dans la corbeille).',
   });
-  if (!ok) return false;
-  if (retiree) {
+  if (ok) {
     corbeille.unshift({ genre: 'retouche', element: r, supprimeLe: new Date() });
-    notifier(r.texteOrigine ? 'Retouche retirée : le texte d\'origine est revenu (récupérable dans la corbeille).' : 'Texte ajouté retiré (récupérable dans la corbeille).', 'succes');
-  } else {
-    notifier('Cette retouche n\'a pas pu être effacée de la page (le fichier a sans doute été réenregistré par un autre logiciel). Elle a seulement été retirée de la liste.', 'attention', 9000);
+    emit('inventaire');
   }
-  emit('inventaire');
-  return true;
+  return ok;
 }
 
 /** Numéro actuel de la page d'un élément (les pages ont pu être réordonnées depuis). */
@@ -218,9 +237,16 @@ export async function restaurer(entree) {
       const r = entree.element;
       let remplaces = [];
       ok = await appliquerModification(async (doc) => {
-        remplaces = await appliquerRetouche(doc, {
-          ...r.reglages, page, texte: r.texte, texteOrigine: r.texteOrigine, id: r.id,
-        });
+        const {
+          id, pageRef, fluxRef, zoneTexte, page: ancienne, ...parametres
+        } = r.brut;
+        const liste = lireRetouches(doc);
+        const resultat = await appliquerRetouche(doc, { ...parametres, page });
+        remplaces = resultat.remplaces;
+        liste.push(entreeRetouche({
+          id, page: doc.getPage(page - 1), fluxRef: resultat.fluxRef, zoneTexte: resultat.zoneTexte, parametres,
+        }));
+        ecrireRetouches(doc, liste);
       }, { message: 'Retouche restaurée.' });
       if (ok && remplaces.length) notifier(`Caractères remplacés par « ? » : ${remplaces.join(' ')}`, 'attention', 7000);
     }

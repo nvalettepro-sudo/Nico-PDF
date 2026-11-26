@@ -99,7 +99,8 @@ export function telecharger(octets, nom, type = 'application/pdf') {
   const url = URL.createObjectURL(new Blob([octets], { type }));
   const lien = document.createElement('a');
   lien.href = url;
-  lien.download = nom;
+  // Les accents sont retirés du nom : sinon Chromium remplace le nom par « download »
+  lien.download = nom.normalize('NFD').replace(/[\u0300-\u036f]/g, '');
   document.body.append(lien);
   lien.click();
   lien.remove();

@@ -38,6 +38,7 @@ const traits = {
   bulle: '<path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1.2-4.4A8 8 0 1 1 21 12z"/>',
   crayon: '<path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/>',
   restaurer: '<path d="M3 12a9 9 0 1 0 3-6.7L3 8"/><path d="M3 3v5h5"/><path d="M12 8v4l3 2"/>',
+  definitif: '<path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h4"/><path d="M14 3v5h5v3"/><circle cx="17" cy="17" r="4"/><path d="m15.5 17 1 1 2-2"/>',
 };
 
 /** Renvoie le code SVG d'une icône. */

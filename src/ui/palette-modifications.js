@@ -66,10 +66,10 @@ function ligneRetouche(r, index) {
   return `
     <li class="modif">
       <button class="modif-corps" data-action="aller-retouche" data-index="${index}" title="Afficher dans le document">
-        <span class="pastille carree" style="background:${versCss(r.reglages?.fond ?? [1, 1, 1])}; color:${versCss(r.couleur)}">T</span>
+        <span class="pastille carree" style="background:${versCss(r.fond)}; color:${versCss(r.couleur)}">T</span>
         <span class="modif-texte">
           <span class="extrait">${echapper(resumeRetouche(r))}</span>
-          <span class="meta">p. ${r.page} · ${r.texteOrigine ? 'Texte retouché' : 'Texte ajouté'}${r.date ? ` · ${dateCourte(new Date(r.date))}` : ''}</span>
+          <span class="meta">p. ${r.page} · ${r.texteOrigine ? 'Texte retouché' : 'Texte ajouté'}</span>
         </span>
       </button>
       <span class="modif-actions">${actions}</span>
@@ -88,7 +88,7 @@ function ligneCorbeille(entree, index) {
   return `
     <li class="modif dans-corbeille">
       <div class="modif-corps">
-        <span class="pastille${retouche ? ' carree' : ''}" style="background:${versCss(retouche ? (a.reglages?.fond ?? [1, 1, 1]) : a.couleur)}">${retouche ? 'T' : ''}</span>
+        <span class="pastille${retouche ? ' carree' : ''}" style="background:${versCss(retouche ? a.fond : a.couleur)}">${retouche ? 'T' : ''}</span>
         <span class="modif-texte">
           <span class="extrait">${echapper(titre)}</span>
           <span class="meta">p. ${a.page} · ${echapper(libelle)} · supprimé à ${entree.supprimeLe.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}</span>
@@ -140,7 +140,7 @@ function dessiner() {
     ${section('commentaires', 'Surlignages commentés', commentaires.length, commentaires.map((a) => ligneAnnotation(a, indice(a))).join(''),
     'Aucun commentaire. Cliquez sur un surlignage avec l\'outil <strong>Surligner</strong> pour le commenter.')}
     ${section('retouches', 'Retouches de texte', retouches.length, retouches.map(ligneRetouche).join(''),
-    'Aucune retouche. Outil <strong>Retouche</strong> dans la barre du haut. (Les retouches faites avant la version 1.3 ne sont pas listées.)')}
+    'Aucune retouche. Outil <strong>Retouche</strong> dans la barre du haut. (Les retouches faites avant la version 1.2 ne sont pas listées.)')}
     ${section('corbeille', 'Corbeille', corbeille.length, corbeille.map(ligneCorbeille).join(''),
     'Vide. Les éléments supprimés arrivent ici et peuvent être restaurés jusqu\'à la fermeture du document.', boutonVider)}`;
 }

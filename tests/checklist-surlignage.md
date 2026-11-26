@@ -50,7 +50,8 @@ Cochez chaque ligne quand le résultat attendu est obtenu.
 - [ ] Retoucher une page, puis la déplacer (bouton **Pages**) → la palette affiche le nouveau numéro de page ; retirer la retouche fonctionne.
 - [ ] Supprimer la page retouchée → la retouche disparaît de la liste.
 - [ ] Enregistrer, fermer, rouvrir → les retouches sont toujours listées et peuvent être retirées.
-- [ ] Un PDF retouché avec une version antérieure à 1.3 : ses retouches ne sont pas listées (normal).
+- [ ] Un PDF retouché avec une version antérieure à 1.2 : ses retouches ne sont pas listées (normal).
+- [ ] Outil **Retouche** : supprimer une retouche depuis son panneau → elle disparaît aussi de la palette.
 
 ## 6. Fichier enregistré
 

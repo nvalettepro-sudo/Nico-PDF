@@ -3,8 +3,8 @@
 //
 // RÈGLES DE MISE À JOUR (à appliquer à chaque modification) :
 // 1. Augmenter le numéro dans package.json (« version ») :
-//    - correctif ou retouche d'apparence      : 1.3.0 -> 1.3.1
-//    - fonction ajoutée, modifiée ou retirée  : 1.3.0 -> 1.4.0
+//    - correctif ou retouche d'apparence      : 1.1.0 -> 1.1.1
+//    - fonction ajoutée, modifiée ou retirée  : 1.1.0 -> 1.2.0
 //    - nouvelle version du cahier des charges : 1.x  -> 2.0.0
 // 2. Ajouter en tête de HISTORIQUE la nouvelle version et ses modifications majeures.
 //    Garder seulement les 4 dernières versions.
@@ -68,15 +68,18 @@ export const FONCTIONS = [
     elements: [
       'Modifier un texte existant (par recouvrement)',
       'Ajouter une zone de texte',
-      'Police, taille, gras, italique et couleur réglables',
-      'Chaque retouche est listée dans l\'onglet « Modifs » et peut être retirée seule (retouches faites depuis la version 1.3)',
+      'Police d\'origine du PDF réutilisée à l\'identique, avec contrôle des lettres disponibles',
+      'Sinon, police standard la plus proche (d\'après le vrai nom de la police), taille, gras, italique et couleur réglables',
+      'Reprendre une retouche plus tard : la corriger, la déplacer ou la supprimer',
+      'Retouches listées dans l\'onglet « Modifs » (avant → après), retirables depuis la liste',
     ],
   },
   {
     theme: 'Fichier',
     elements: [
-      'Enregistrer sur le fichier d\'origine (Chrome, Edge) ou télécharger',
+      'Enregistrer (modifiable) : sur le fichier d\'origine (Chrome, Edge) ou téléchargement ; les retouches restent modifiables',
       'Enregistrer sous',
+      'Enregistrer en version définitive : retouches figées et ancien texte réellement retiré (texte toujours sélectionnable)',
       'Annuler / rétablir les 10 dernières modifications (Ctrl+Z, Ctrl+Y)',
     ],
   },
@@ -85,20 +88,30 @@ export const FONCTIONS = [
 /** Les 4 dernières versions, de la plus récente à la plus ancienne. */
 export const HISTORIQUE = [
   {
+    version: '1.4.0',
+    date: '2026-11-26',
+    modifications: [
+      'Nouvel outil « Surligner » : surligner, souligner, barrer, surligner une zone, en 6 couleurs ; commentaires affichés au survol',
+      'Nouvelle palette « Modifs » : surlignages, commentaires et retouches de texte, accès direct, poubelle',
+      'Corbeille : un élément supprimé par erreur peut être restauré',
+    ],
+  },
+  {
     version: '1.3.0',
     date: '2026-11-26',
     modifications: [
-      'Retouches de texte listées dans la palette « Modifs » (avant → après), avec accès direct',
-      'Retirer une retouche fait réapparaître le texte d\'origine ; restauration possible depuis la corbeille',
+      'Retouche : le nouveau texte est écrit avec la police d\'origine du PDF (même dessin des lettres), proposée par défaut',
+      'Contrôle des lettres disponibles dans la police intégrée, avec message si une lettre manque',
+      'Police proche mieux choisie, d\'après le vrai nom de la police lu dans le fichier',
     ],
   },
   {
     version: '1.2.0',
     date: '2026-11-26',
     modifications: [
-      'Nouvel outil « Surligner » : surligner, souligner, barrer, surligner une zone, en 6 couleurs',
-      'Commentaires sur les surlignages, affichés au survol',
-      'Nouvelle palette « Modifs » : liste des surlignages et commentaires, accès direct, poubelle, corbeille',
+      'Enregistrement modifiable : les retouches sont mémorisées dans le fichier et peuvent être reprises plus tard (corriger, déplacer, supprimer)',
+      'Nouveau bouton « Enregistrer en version définitive » : retouches figées, ancien texte réellement retiré, avec vérification automatique',
+      'Téléchargement : le nom du fichier est conservé même s\'il contient des accents (accents retirés)',
     ],
   },
   {
@@ -106,13 +119,6 @@ export const HISTORIQUE = [
     date: '2026-11-14',
     modifications: [
       'Fenêtre « À propos » : liste des fonctions, numéro de version et historique des versions',
-    ],
-  },
-  {
-    version: '1.0.1',
-    date: '2026-11-14',
-    modifications: [
-      'Notifications : pastille de couleur à la place de la bordure latérale',
     ],
   },
 ];
