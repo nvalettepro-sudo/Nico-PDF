@@ -222,11 +222,11 @@ function rectsDeLAnnotation(dict) {
 }
 
 /**
- * Modifie le commentaire et / ou la couleur d'une annotation.
+ * Modifie le commentaire, la couleur et / ou l'étendue (rectangles) d'une annotation.
  * @param {string} refTexte référence au format PDF.js
- * @param {{ commentaire?: string, couleur?: number[] }} changements
+ * @param {{ commentaire?: string, couleur?: number[], rects?: number[][] }} changements
  */
-export function modifierAnnotation(doc, refTexte, { commentaire, couleur } = {}) {
+export function modifierAnnotation(doc, refTexte, { commentaire, couleur, rects: nouveauxRects } = {}) {
   const trouve = trouverAnnotation(doc, refTexte);
   if (!trouve) throw new Error('Cette annotation est introuvable dans le fichier.');
   const { dict } = trouve;
@@ -235,15 +235,23 @@ export function modifierAnnotation(doc, refTexte, { commentaire, couleur } = {})
     if (commentaire.trim()) dict.set(PDFName.of('Contents'), PDFHexString.fromText(commentaire.trim()));
     else dict.delete(PDFName.of('Contents'));
   }
-  if (couleur) {
-    dict.set(PDFName.of('C'), contexte.obj(couleur.map(f)));
+  if (couleur) dict.set(PDFName.of('C'), contexte.obj(couleur.map(f)));
+  if (couleur || nouveauxRects) {
     const sousType = dict.lookupMaybe(PDFName.of('Subtype'), PDFName)?.decodeText().replace(/^\//, '');
-    const rects = rectsDeLAnnotation(dict);
+    let rects = rectsDeLAnnotation(dict);
+    if (nouveauxRects?.length) {
+      rects = nouveauxRects.map((r) => [
+        Math.min(r[0], r[2]), Math.min(r[1], r[3]), Math.max(r[0], r[2]), Math.max(r[1], r[3]),
+      ]);
+      dict.set(PDFName.of('QuadPoints'), contexte.obj(rects.flatMap(([x1, y1, x2, y2]) => [x1, y2, x2, y2, x1, y1, x2, y1].map(f))));
+    }
+    const c = dict.lookupMaybe(PDFName.of('C'), PDFArray);
+    const teinte = couleur ?? (c ? c.asArray().map((n) => (n instanceof PDFNumber ? n.asNumber() : 0)) : [1, 0.85, 0.1]);
     if (rects.length && ['Highlight', 'Underline', 'StrikeOut'].includes(sousType)) {
       effacerApparence(contexte, dict.lookupMaybe(PDFName.of('AP'), PDFDict));
       const cadre = englobant(rects);
       dict.set(PDFName.of('Rect'), contexte.obj(cadre));
-      dict.set(PDFName.of('AP'), contexte.obj({ N: creerApparence(contexte, sousType, rects, couleur, cadre) }));
+      dict.set(PDFName.of('AP'), contexte.obj({ N: creerApparence(contexte, sousType, rects, teinte.length === 3 ? teinte : [1, 0.85, 0.1], cadre) }));
     }
   }
   dict.set(PDFName.of('M'), PDFString.fromDate(new Date()));

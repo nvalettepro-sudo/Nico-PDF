@@ -190,7 +190,8 @@ function allerA(a) {
   if (etat.outil === 'surlignage' && a.ref) choisir(a);
 }
 
-async function commenter(a) {
+/** Fenêtre de saisie du commentaire d'une annotation. */
+export async function commenter(a) {
   allerA(a);
   const { valeur, contenu } = await ouvrirDialogue({
     titre: a.commentaire ? 'Modifier le commentaire' : 'Ajouter un commentaire',

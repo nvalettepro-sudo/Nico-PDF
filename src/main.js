@@ -18,6 +18,8 @@ import { initRetouche } from './ui/panneau-retouche.js';
 import { initModifications } from './modifications.js';
 import { initSurlignage } from './ui/outil-surlignage.js';
 import { initPalette } from './ui/palette-modifications.js';
+import { initBarreSelection } from './ui/barre-selection.js';
+import { initPoignees } from './ui/poignees.js';
 import { signalerErreur } from './ui/dialogues.js';
 
 function demarrer() {
@@ -33,6 +35,8 @@ function demarrer() {
   initModifications();
   initSurlignage(visionneuse);
   initPalette();
+  initBarreSelection(visionneuse);
+  initPoignees(visionneuse);
   initBarreOutils();
 
   // Le panneau des miniatures suit le document
