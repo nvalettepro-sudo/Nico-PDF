@@ -47,6 +47,10 @@ export const FONCTIONS = [
     theme: 'Surlignage et commentaires',
     elements: [
       'Surligner, souligner ou barrer du texte sélectionné (6 couleurs)',
+      'Mini-barre au-dessus du texte sélectionné (mode Texte) : couleurs, souligner, barrer, commenter, copier',
+      'Surlignage continu : chaque sélection est surlignée aussitôt (case de la mini-barre ou outil Surligner ; Échap pour arrêter)',
+      'Alt + sélection (mode Texte) : surlignage immédiat',
+      'Poignées pour ajuster le début et la fin d\'un surlignage, ou les coins d\'une zone',
       'Surligner une zone rectangulaire (plans, scans sans texte)',
       'Commenter un surlignage ; bulle du commentaire au survol',
       'Changer la couleur ou supprimer un élément',
@@ -88,6 +92,15 @@ export const FONCTIONS = [
 /** Les 4 dernières versions, de la plus récente à la plus ancienne. */
 export const HISTORIQUE = [
   {
+    version: '1.5.0',
+    date: '2026-11-27',
+    modifications: [
+      'Mini-barre au-dessus du texte sélectionné : surligner en un clic, souligner, barrer, commenter, copier',
+      'Surlignage continu (case de la mini-barre) avec bandeau et curseur surligneur ; Alt + sélection pour un surlignage immédiat',
+      'Poignées pour allonger ou raccourcir un surlignage par ses deux bouts, ou redimensionner une zone',
+    ],
+  },
+  {
     version: '1.4.0',
     date: '2026-11-26',
     modifications: [
@@ -112,13 +125,6 @@ export const HISTORIQUE = [
       'Enregistrement modifiable : les retouches sont mémorisées dans le fichier et peuvent être reprises plus tard (corriger, déplacer, supprimer)',
       'Nouveau bouton « Enregistrer en version définitive » : retouches figées, ancien texte réellement retiré, avec vérification automatique',
       'Téléchargement : le nom du fichier est conservé même s\'il contient des accents (accents retirés)',
-    ],
-  },
-  {
-    version: '1.1.0',
-    date: '2026-11-14',
-    modifications: [
-      'Fenêtre « À propos » : liste des fonctions, numéro de version et historique des versions',
     ],
   },
 ];

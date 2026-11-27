@@ -12,6 +12,28 @@ Cochez chaque ligne quand le résultat attendu est obtenu.
 - [ ] Le type et la couleur choisis sont retrouvés après un rechargement de la page.
 - [ ] **Ctrl+Z** retire le dernier surlignage, **Ctrl+Y** le remet.
 
+## 1 bis. Mini-barre, surlignage continu, Alt (v1.5)
+
+- [ ] Mode **Texte** : sélectionner du texte → une mini-barre apparaît au-dessus (6 couleurs, S, B, bulle, copier, case).
+- [ ] Clic sur une couleur → surligné dans cette couleur ; la barre disparaît.
+- [ ] **S** → souligné ; **B** → barré ; bulle → surligné puis fenêtre de commentaire.
+- [ ] Bouton copier → « Texte copié » ; coller dans un mail fonctionne. **Ctrl+C** marche aussi, sans rien surligner.
+- [ ] Clic ailleurs, défilement ou Échap → la barre disparaît sans rien créer.
+- [ ] Cocher **Surlignage continu** → la sélection est surlignée, le bandeau noir apparaît en bas, le curseur devient un surligneur.
+- [ ] En continu : chaque nouvelle sélection est surlignée dès le relâchement, sans barre.
+- [ ] **Échap** (même si le curseur est dans le champ commentaire) ou **Arrêter** → retour au mode Texte, bandeau masqué.
+- [ ] Laisser le continu actif, ouvrir un autre PDF → le continu reprend.
+- [ ] Mode Texte, maintenir **Alt** pendant la sélection → surligné immédiatement, sans barre.
+
+## 1 ter. Ajuster un surlignage (v1.5)
+
+- [ ] Clic sur un surlignage (mode Texte ou Surligner) → encadré, avec une poignée au début et une à la fin.
+- [ ] Tirer la poignée de fin vers la droite (puis sur la ligne suivante) → l'aperçu suit lettre par lettre ; au relâchement, le surlignage est agrandi.
+- [ ] Tirer la poignée de début → le surlignage est raccourci ; le commentaire et la couleur sont conservés.
+- [ ] La palette **Modifs** affiche le nouveau texte surligné. **Ctrl+Z** annule l'ajustement.
+- [ ] Zone : 4 poignées aux coins ; tirer un coin redimensionne la zone.
+- [ ] PDF protégé : pas de poignées.
+
 ## 2. Surligner une zone
 
 - [ ] Type **Zone**, ouvrir `scan.pdf` → tracer un rectangle → la zone est surlignée (transparente : le scan reste lisible).

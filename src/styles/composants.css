@@ -1145,3 +1145,106 @@ button.modif-corps {
 .retouche .styles input:disabled + span {
   opacity: 0.4;
 }
+
+/* ---------- Mini-barre au-dessus du texte sélectionné ---------- */
+.barre-selection {
+  position: fixed;
+  z-index: 55;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 5px 8px;
+  border: 1px solid var(--bordure);
+  border-radius: 10px;
+  background: var(--surface);
+  box-shadow: var(--ombre-flottante);
+  font-size: 13px;
+  user-select: none;
+}
+
+.barre-selection .groupe-couleurs {
+  display: flex;
+  gap: 5px;
+}
+
+.barre-selection .pastille-couleur {
+  width: 22px;
+  height: 22px;
+}
+
+.barre-selection .separateur {
+  width: 1px;
+  height: 22px;
+  margin: 0 4px;
+  background: var(--bordure);
+}
+
+.barre-selection .lettre {
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.case-continu {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 0 4px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.case-continu input {
+  accent-color: var(--accent);
+}
+
+/* ---------- Bandeau « Surlignage continu » ---------- */
+.bandeau-continu {
+  position: fixed;
+  left: 50%;
+  bottom: 16px;
+  z-index: 45;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 8px 6px 14px;
+  border-radius: 999px;
+  background: var(--texte);
+  color: var(--surface);
+  box-shadow: var(--ombre-flottante);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.bandeau-continu svg {
+  color: #ffd819;
+}
+
+.bandeau-continu .btn {
+  height: 28px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--surface) 18%, transparent);
+  color: var(--surface);
+}
+
+.bandeau-continu kbd {
+  padding: 0 4px;
+  border-radius: 3px;
+  background: color-mix(in srgb, var(--surface) 22%, transparent);
+  font: inherit;
+  font-size: 11px;
+}
+
+.pastille-couleur.mini {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border-width: 1px;
+  vertical-align: -1px;
+  cursor: default;
+}
+
+/* Le bandeau du surlignage continu occupe le bas de l'écran : les notifications passent au-dessus */
+body.continu-actif .notifications {
+  bottom: 68px;
+}

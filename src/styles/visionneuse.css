@@ -389,3 +389,107 @@
   outline: 2px solid var(--accent);
   background: rgb(194 65 12 / 0.1);
 }
+
+/* ---------- Surlignage continu : curseur surligneur sur le texte ---------- */
+.outil-surlignage:not(.mode-zone) .textLayer,
+.outil-surlignage:not(.mode-zone) .textLayer span {
+  cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='m9 11-6 6v3h9l3-3' fill='%23ffd819' stroke='%231d1d1b' stroke-width='1.6' stroke-linejoin='round'/%3E%3Cpath d='m22 12-4.6 4.6a2 2 0 0 1-2.8 0l-5.2-5.2a2 2 0 0 1 0-2.8L14 4' fill='white' stroke='%231d1d1b' stroke-width='1.6' stroke-linejoin='round'/%3E%3C/svg%3E") 3 21, text !important;
+}
+
+/* ---------- Poignées pour ajuster un surlignage ---------- */
+.poignee {
+  position: absolute;
+  pointer-events: auto;
+  touch-action: none;
+  z-index: 4;
+}
+
+.poignee.debut,
+.poignee.fin {
+  width: 12px !important;
+  margin-left: -6px;
+  cursor: ew-resize;
+}
+
+/* Trait vertical + pastille ronde (en haut au début, en bas à la fin) */
+.poignee.debut::before,
+.poignee.fin::before {
+  content: '';
+  position: absolute;
+  left: 5px;
+  top: -2px;
+  bottom: -2px;
+  width: 2px;
+  background: var(--accent);
+}
+
+.poignee.debut::after,
+.poignee.fin::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  width: 12px;
+  height: 12px;
+  border: 2px solid #fff;
+  border-radius: 50%;
+  background: var(--accent);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+  box-sizing: border-box;
+}
+
+.poignee.debut::after {
+  top: -12px;
+}
+
+.poignee.fin::after {
+  bottom: -12px;
+}
+
+.poignee.coin {
+  width: 12px !important;
+  height: 12px !important;
+  margin: -6px 0 0 -6px;
+  border: 2px solid #fff;
+  border-radius: 3px;
+  background: var(--accent);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.35);
+}
+
+.poignee.coin[data-coin='hg'],
+.poignee.coin[data-coin='bd'] {
+  cursor: nwse-resize;
+}
+
+.poignee.coin[data-coin='hd'],
+.poignee.coin[data-coin='bg'] {
+  cursor: nesw-resize;
+}
+
+.poignee.active::after,
+.poignee.coin.active {
+  transform: scale(1.25);
+}
+
+/* Pendant le déplacement : le texte doit rester « visible » sous la souris */
+.redimension .calque-outil,
+.redimension .poignee {
+  pointer-events: none !important;
+}
+
+.redimension {
+  cursor: ew-resize;
+  user-select: none;
+}
+
+.apercu-redimension {
+  position: absolute;
+  background: color-mix(in srgb, var(--couleur) 55%, transparent);
+  mix-blend-mode: multiply;
+  outline: 1.5px dashed var(--accent);
+  pointer-events: none;
+}
+
+.apercu-redimension.trait {
+  background: none;
+  border-bottom: 2px solid var(--couleur);
+}

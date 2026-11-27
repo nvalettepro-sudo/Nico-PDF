@@ -1,7 +1,10 @@
 // Outil « Surligner » : surligner, souligner, barrer du texte ou surligner une zone, puis commenter.
+// Cet outil est aussi le « surlignage continu » : chaque sélection est surlignée dès qu'on relâche
+// la souris (bandeau en bas de l'écran, Échap pour arrêter). En mode Texte, Alt + sélection surligne
+// immédiatement, sans changer d'outil.
 // Gère aussi, quel que soit l'outil actif : les repères des commentaires sur les pages,
 // la bulle qui affiche un commentaire au survol, et le clignotement d'un élément retrouvé.
-import { etat, on } from '../state.js';
+import { etat, on, emit } from '../state.js';
 import {
   positionDansPage, viewportPage, divPage, placerEnPourcentage,
 } from '../pdf/render.js';
@@ -12,17 +15,21 @@ import {
 } from '../modifications.js';
 import { placerIcones, icone } from './icones.js';
 import { notifier } from './dialogues.js';
+import { choisirOutil } from './barre-outils.js';
 
 const CLE_REGLAGES = 'nicopdf.surlignage';
+const CLE_CONTINU = 'nicopdf.surlignage-continu';
 
 let panneau;
 let visionneuse;
-let reglages = { type: 'surligner', couleur: 0 };
+/** Type et couleur en cours (partagés avec la mini-barre de sélection). */
+export const reglages = { type: 'surligner', couleur: 0 };
 let choisie = null; // annotation sélectionnée (modifiable dans le panneau)
 let refAChoisir = null; // annotation tout juste créée, à sélectionner dès qu'elle est relue
 let trace = null; // zone en cours de tracé
 let bulle = null;
 let survolPrevu = false;
+let bandeau = null;
 
 export function initSurlignage(element) {
   visionneuse = element;
@@ -38,17 +45,33 @@ export function initSurlignage(element) {
   on('outil', (outil) => {
     if (outil === 'surlignage') ouvrirPanneau();
     else if (panneau.querySelector('.panneau-surlignage')) fermerPanneau();
+    else if (outil !== 'selection') choisir(null);
     majClasses();
+    majBandeau();
+    // Le surlignage continu est mémorisé : il reprend à la prochaine ouverture d'un document
+    try {
+      localStorage.setItem(CLE_CONTINU, outil === 'surlignage' ? '1' : '0');
+    } catch {
+      // stockage indisponible : sans conséquence
+    }
   });
   on('document', ({ nouveau }) => {
-    if (nouveau) choisir(null);
+    if (!nouveau) return;
+    choisir(null);
+    let continu = false;
+    try {
+      continu = localStorage.getItem(CLE_CONTINU) === '1';
+    } catch {
+      continu = false;
+    }
+    if (continu && !etat.lectureSeule && etat.outil !== 'surlignage') choisirOutil('surlignage');
   });
   on('inventaire', () => {
     if (refAChoisir) {
       const nouvelle = annotationParRef(refAChoisir);
       if (nouvelle) {
         refAChoisir = null;
-        choisir(nouvelle, { focus: true });
+        choisir(nouvelle, { focus: etat.outil === 'surlignage' });
       }
     } else if (choisie) {
       choisir(annotationParRef(choisie.ref));
@@ -71,8 +94,18 @@ export function initSurlignage(element) {
   visionneuse.addEventListener('pointerleave', cacherBulle);
   visionneuse.addEventListener('scroll', cacherBulle, { passive: true });
 
+  // Échap arrête le surlignage continu, même si le curseur est dans le champ commentaire
   document.addEventListener('keydown', (e) => {
-    if (etat.outil !== 'surlignage' || !choisie || document.querySelector('dialog[open]')) return;
+    if (e.key !== 'Escape' || etat.outil !== 'surlignage' || document.querySelector('dialog[open]')) return;
+    if (e.target.closest?.('input, textarea, select') && !panneau.contains(e.target)) return;
+    e.preventDefault();
+    e.target.blur?.();
+    choisirOutil('selection');
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!['surlignage', 'selection'].includes(etat.outil) || !choisie || document.querySelector('dialog[open]')) return;
+    if (etat.lectureSeule) return;
     if (e.target.closest?.('input, textarea, select')) return;
     if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
@@ -81,7 +114,7 @@ export function initSurlignage(element) {
   });
 }
 
-function memoriserReglages() {
+export function memoriserReglages() {
   try {
     localStorage.setItem(CLE_REGLAGES, JSON.stringify(reglages));
   } catch {
@@ -92,6 +125,52 @@ function memoriserReglages() {
 function majClasses() {
   visionneuse.classList.toggle('outil-surlignage', etat.outil === 'surlignage');
   visionneuse.classList.toggle('mode-zone', etat.outil === 'surlignage' && reglages.type === 'zone');
+}
+
+/**
+ * Lance le surlignage continu (depuis la mini-barre) avec une couleur et un type.
+ * @param {number} couleur index dans COULEURS
+ * @param {string} [type] surligner, souligner ou barrer
+ */
+export function activerContinu(couleur, type = reglages.type === 'zone' ? 'surligner' : reglages.type) {
+  reglages.couleur = couleur;
+  reglages.type = type;
+  memoriserReglages();
+  if (etat.outil === 'surlignage') {
+    // Déjà actif : on met juste à jour le panneau et le bandeau
+    ouvrirPanneau();
+    majClasses();
+    majBandeau();
+  } else {
+    choisirOutil('surlignage');
+  }
+}
+
+/** Bandeau du bas : rappelle que le surlignage continu est actif. */
+function majBandeau() {
+  const actif = etat.outil === 'surlignage';
+  document.body.classList.toggle('continu-actif', actif);
+  if (!actif) {
+    bandeau?.remove();
+    bandeau = null;
+    return;
+  }
+  if (!bandeau) {
+    bandeau = document.createElement('div');
+    bandeau.className = 'bandeau-continu';
+    bandeau.setAttribute('role', 'status');
+    document.body.append(bandeau);
+  }
+  const couleur = COULEURS[reglages.couleur];
+  const action = reglages.type === 'zone'
+    ? 'tracez des zones'
+    : `${{ surligner: 'surligner', souligner: 'souligner', barrer: 'barrer' }[reglages.type]} : sélectionnez du texte`;
+  bandeau.innerHTML = `
+    ${icone('surligneur')}
+    <span><strong>Surlignage continu</strong> — <span class="pastille-couleur mini" style="--couleur:${versCss(couleur.rvb)}"></span>
+    ${couleur.nom.toLowerCase()}, ${action}</span>
+    <button type="button" class="btn">Arrêter <kbd>Échap</kbd></button>`;
+  bandeau.querySelector('button').addEventListener('click', () => choisirOutil('selection'));
 }
 
 // ---------- Panneau ----------
@@ -140,6 +219,7 @@ function ouvrirPanneau() {
     memoriserReglages();
     majClasses();
     majConsigne();
+    majBandeau();
   }));
   panneau.querySelectorAll('[data-couleur]').forEach((b) => b.addEventListener('click', () => {
     reglages.couleur = Number(b.dataset.couleur);
@@ -148,6 +228,7 @@ function ouvrirPanneau() {
       x.setAttribute('aria-pressed', String(x === b));
     });
     memoriserReglages();
+    majBandeau();
   }));
   panneau.querySelectorAll('[data-recolorer]').forEach((b) => b.addEventListener('click', () => {
     if (choisie) modifierUneAnnotation(choisie, { couleur: COULEURS[Number(b.dataset.recolorer)].rvb }, 'Couleur changée.');
@@ -208,15 +289,27 @@ export function choisir(a, { focus = false } = {}) {
     }
   }
   dessinerReperes();
+  emit('annotation-choisie', a);
+}
+
+/** Annotation actuellement sélectionnée (ou null). */
+export function annotationChoisie() {
+  return choisie;
 }
 
 // ---------- Surligner une sélection de texte ----------
 
-/** Rectangles (en pixels de la page) couverts par la sélection, regroupés par page. */
-function rectsDeLaSelection(selection) {
+/** Plages (Range) de la sélection actuelle du navigateur. */
+export function plagesDeLaSelection(selection = window.getSelection()) {
+  const plages = [];
+  for (let k = 0; k < (selection?.rangeCount ?? 0); k++) plages.push(selection.getRangeAt(k).cloneRange());
+  return plages;
+}
+
+/** Rectangles (en pixels de la page) couverts par des plages de texte, regroupés par page. */
+export function rectsDesPlages(plages) {
   const parPage = new Map();
-  for (let k = 0; k < selection.rangeCount; k++) {
-    const plage = selection.getRangeAt(k);
+  for (const plage of plages) {
     const racine = plage.commonAncestorContainer;
     const noeuds = [];
     if (racine.nodeType === Node.TEXT_NODE) {
@@ -250,7 +343,7 @@ function rectsDeLaSelection(selection) {
 }
 
 /** Regroupe des rectangles (pixels) par ligne et fusionne les morceaux voisins. */
-function fusionnerParLigne(rects) {
+export function fusionnerParLigne(rects) {
   const tries = [...rects].sort((r1, r2) => (r1.h + r1.b) / 2 - (r2.h + r2.b) / 2);
   const lignes = [];
   for (const r of tries) {
@@ -283,22 +376,33 @@ function fusionnerParLigne(rects) {
 }
 
 /** Pixels de la page -> rectangle PDF [x1, y1, x2, y2]. */
-function versPdf(n, { g, h, d, b }) {
+export function versPdf(n, { g, h, d, b }) {
   const vue = viewportPage(n);
   const [x1, y1] = vue.convertToPdfPoint(g, h);
   const [x2, y2] = vue.convertToPdfPoint(d, b);
   return [Math.min(x1, x2), Math.min(y1, y2), Math.max(x1, x2), Math.max(y1, y2)];
 }
 
+/** Vrai pendant le déplacement d'une poignée (voir poignees.js) : pas de sélection ni de surlignage. */
+let redimensionEnCours = false;
+export function signalerRedimension(actif) {
+  if (actif) redimensionEnCours = true;
+  else setTimeout(() => { redimensionEnCours = false; }, 80);
+}
+
 function surFinSelection(e) {
-  if (etat.outil !== 'surlignage' || reglages.type === 'zone' || e.button !== 0) return;
-  if (document.querySelector('dialog[open]')) return;
+  if (e.button !== 0 || document.querySelector('dialog[open]') || redimensionEnCours) return;
+  if (etat.outil !== 'surlignage' && etat.outil !== 'selection') return;
+  if (etat.outil === 'surlignage' && reglages.type === 'zone') return;
+  if (e.target.closest?.('.barre-selection, .poignee')) return;
   if (!visionneuse.contains(e.target) && !window.getSelection()?.toString()) return;
   // Laisse le navigateur terminer la sélection
-  setTimeout(() => traiterSelection(e), 0);
+  const { altKey, target, clientX, clientY } = e;
+  setTimeout(() => traiterSelection({ altKey, target, clientX, clientY }), 0);
 }
 
 async function traiterSelection(e) {
+  if (redimensionEnCours) return;
   const selection = window.getSelection();
   if (!selection || selection.isCollapsed || !selection.toString().trim()) {
     // Simple clic : sélectionne l'élément sous la souris (ou aucun)
@@ -306,26 +410,46 @@ async function traiterSelection(e) {
     if (pos) choisir(annotationSousLePoint(pos.n, pos.px, pos.py));
     return;
   }
-  const parPage = rectsDeLaSelection(selection);
-  if (!parPage.size) return;
+  // Mode Texte sans Alt : c'est la mini-barre qui propose de surligner (barre-selection.js)
+  const immediat = etat.outil === 'surlignage' || (e.altKey && !etat.lectureSeule);
+  if (!immediat) return;
+  const type = reglages.type === 'zone' ? 'surligner' : reglages.type;
+  const plages = plagesDeLaSelection(selection);
   selection.removeAllRanges();
-  const couleur = COULEURS[reglages.couleur].rvb;
+  await surlignerPlages(plages, { type, couleur: reglages.couleur });
+}
+
+/**
+ * Surligne (souligne, barre) des plages de texte. Une annotation par page.
+ * @param {Range[]} plages
+ * @param {{ type: string, couleur: number, choisirApres?: boolean }} options couleur : index dans COULEURS
+ * @returns {Promise<string|null>} référence de la dernière annotation créée
+ */
+export async function surlignerPlages(plages, { type, couleur, choisirApres = true }) {
+  const parPage = rectsDesPlages(plages);
   const pages = [...parPage.entries()].filter(([, rects]) => rects.length);
+  if (!pages.length) {
+    notifier('Aucun texte du document dans la sélection.', 'attention');
+    return null;
+  }
   let derniere = null;
   for (const [n, rects] of pages) {
     const pdfRects = fusionnerParLigne(rects).map((r) => versPdf(n, r));
     if (!pdfRects.length) continue;
     // eslint-disable-next-line no-await-in-loop
-    const ref = await ajouterAnnotation({ page: n, type: reglages.type, rects: pdfRects, couleur }, `${TYPES[reglages.type].libelle}${pages.length > 1 ? ` (page ${n})` : ''}.`);
+    const ref = await ajouterAnnotation({
+      page: n, type, rects: pdfRects, couleur: COULEURS[couleur].rvb,
+    }, `${TYPES[type].libelle}${pages.length > 1 ? ` (page ${n})` : ''}.`);
     if (ref) derniere = ref;
   }
-  if (derniere) {
+  if (derniere && choisirApres) {
     refAChoisir = derniere;
     if (annotationParRef(derniere)) {
-      choisir(annotationParRef(derniere), { focus: true });
+      choisir(annotationParRef(derniere), { focus: etat.outil === 'surlignage' });
       refAChoisir = null;
     }
   }
+  return derniere;
 }
 
 // ---------- Surligner une zone ----------
@@ -404,7 +528,7 @@ function dessinerReperes() {
       repere.style.setProperty('--couleur', versCss(a.couleur));
       if (placerEnPourcentage(repere, a.page, [a.cadre[2], a.cadre[3], a.cadre[2], a.cadre[3]])) calque.append(repere);
     }
-    if (choisie && a.ref === choisie.ref && etat.outil === 'surlignage') {
+    if (choisie && a.ref === choisie.ref && ['surlignage', 'selection'].includes(etat.outil)) {
       for (const r of a.rects) {
         const contour = document.createElement('div');
         contour.className = 'annot-choisie';

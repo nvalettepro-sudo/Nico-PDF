@@ -1,6 +1,6 @@
 {
   "name": "nico-pdf",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "description": "Nico PDF — lecteur et retoucheur de PDF dans le navigateur, 100 % local",
   "scripts": {
     "predev": "node scripts/verifier-version.mjs && node scripts/copier-ressources-pdfjs.mjs",

@@ -146,6 +146,29 @@ export function annotationSousLePoint(n, px, py, marge = 1.5) {
   return meilleure;
 }
 
+/**
+ * Attend qu'une annotation tout juste créée apparaisse dans l'inventaire (relu après chaque modification).
+ * @returns {Promise<object|null>} null au bout de 8 secondes
+ */
+export function attendreAnnotation(ref) {
+  const deja = annotationParRef(ref);
+  if (deja && inventaire.pret) return Promise.resolve(deja);
+  return new Promise((resolve) => {
+    const arreter = on('inventaire', () => {
+      const a = annotationParRef(ref);
+      if (a) {
+        arreter();
+        clearTimeout(minuteur);
+        resolve(a);
+      }
+    });
+    const minuteur = setTimeout(() => {
+      arreter();
+      resolve(null);
+    }, 8000);
+  });
+}
+
 /** Retrouve une annotation de l'inventaire par sa référence. */
 export function annotationParRef(ref) {
   return inventaire.annotations.find((a) => a.ref === ref) ?? null;

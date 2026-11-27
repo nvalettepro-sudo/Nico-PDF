@@ -5,7 +5,7 @@
 Lecteur et retoucheur de PDF qui s'ouvre dans le navigateur (Chrome ou Edge).
 Usage personnel. **Les PDF ne quittent jamais l'ordinateur** : aucun serveur, aucun suivi.
 
-**Version actuelle : 1.4.0** — le détail (liste des fonctions, historique des 4 dernières versions)
+**Version actuelle : 1.5.0** — le détail (liste des fonctions, historique des 4 dernières versions)
 est dans l'application : bouton **ⓘ À propos**, en haut à droite.
 Ces informations sont tenues à jour dans `src/version.js` (règles dans `CLAUDE.md`).
 
@@ -20,7 +20,9 @@ Ces informations sont tenues à jour dans `src/version.js` (règles dans `CLAUDE
 | Thème sombre, inversion des couleurs des pages | Boutons lune et cercle |
 | Sélection et copie du texte, capture de zone en image | Outils **Texte** et **Capture** |
 | Réordonner, supprimer, pivoter, insérer, extraire, remplacer des pages | Bouton **Pages** |
-| Surligner, souligner, barrer, surligner une zone, commenter | Outil **Surligner** |
+| Surligner, souligner, barrer, surligner une zone, commenter | Outil **Surligner**, ou mini-barre qui apparaît sur le texte sélectionné (mode **Texte**) |
+| Surlignage continu (chaque sélection est surlignée aussitôt) | Case de la mini-barre, ou **Alt** + sélection pour un surlignage isolé ; **Échap** pour arrêter |
+| Ajuster un surlignage (début, fin) ou une zone (coins) | Cliquer dessus, puis tirer les poignées |
 | Liste des surlignages, commentaires et retouches de texte : accès direct, poubelle, corbeille | Panneau gauche, onglet **Modifs** |
 | Modifier un texte existant (avec la police d'origine du PDF), ajouter une zone de texte, reprendre une retouche plus tard | Outil **Retouche** |
 | Annuler / rétablir (10 étapes) | Ctrl+Z / Ctrl+Y |
